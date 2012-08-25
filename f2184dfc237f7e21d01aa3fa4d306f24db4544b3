@@ -424,6 +424,24 @@
       "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "AAAAWn//+2g\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 2881
+      },
+      "writtenOn": "2012-08-25T01:36:48Z",
+      "side": 1,
+      "message": "Allows the application to store and retrieve all voicemails that this device can access.\n\nIk zou \"dit apparaat\" niet verwijderen. Niet te kort maken.",
+      "parentUuid": "AAAAWn//+4U\u003d",
+      "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
