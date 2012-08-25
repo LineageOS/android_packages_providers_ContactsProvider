@@ -442,6 +442,24 @@
       "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "AAAAWn//+2M\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 4297
+      },
+      "writtenOn": "2012-08-25T02:11:02Z",
+      "side": 1,
+      "message": "Ik ben het eens met Eddy. Hoe doen jullie die bullet points?",
+      "parentUuid": "AAAAWn//+2g\u003d",
+      "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
