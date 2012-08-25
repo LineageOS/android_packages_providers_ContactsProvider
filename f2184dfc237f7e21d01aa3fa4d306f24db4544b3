@@ -55,6 +55,24 @@
     },
     {
       "key": {
+        "uuid": "AAAAWn//+5c\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 4297
+      },
+      "writtenOn": "2012-08-25T00:56:01Z",
+      "side": 1,
+      "message": "Je hebt gelijk",
+      "parentUuid": "AAAAWn//+6U\u003d",
+      "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "AAAAWn///Fs\u003d",
         "filename": "res/values-nl/strings.xml",
         "patchSetId": 1
@@ -119,6 +137,24 @@
       "writtenOn": "2012-08-25T00:47:09Z",
       "side": 1,
       "message": "Contactendatabase -\u003e Contactdatabase",
+      "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "AAAAWn//+5M\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 4297
+      },
+      "writtenOn": "2012-08-25T00:56:01Z",
+      "side": 1,
+      "message": "Dit zou ik niet veranderen, is prima zo",
+      "parentUuid": "AAAAWn//+6Q\u003d",
       "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
@@ -295,6 +331,24 @@
       "side": 1,
       "message": "* Hiermee kan de app alle voicemails waartoe dit apparaat toegang heeft opslaan en ophalen",
       "parentUuid": "AAAAWn//++8\u003d",
+      "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "AAAAWn//+5A\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 4297
+      },
+      "writtenOn": "2012-08-25T00:56:01Z",
+      "side": 1,
+      "message": "Hiermee kan de app alle voicemails, waartoe dit apparaat toegang heeft, ophalen en opslaan",
+      "parentUuid": "AAAAWn//+6I\u003d",
       "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
