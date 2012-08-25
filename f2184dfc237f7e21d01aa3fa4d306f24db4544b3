@@ -72,6 +72,24 @@
     },
     {
       "key": {
+        "uuid": "AAAAWn//+78\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 4297
+      },
+      "writtenOn": "2012-08-25T00:28:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "AAAAWn//+/I\u003d",
+      "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "AAAAWn///Fo\u003d",
         "filename": "res/values-nl/strings.xml",
         "patchSetId": 1
@@ -136,6 +154,24 @@
       "side": 1,
       "message": "- Raak aan om... \u003d Tik om...\n- Raak dit aan om... \u003d Tik op dit om...\n\nHet eerste is makkelijker te vervangen dan het tweede (dit is dan ook niet veranderd in Settings).\nOverigens gebruikt AOSP ook tik/raak aan door elkaar.",
       "parentUuid": "AAAAWn///Fk\u003d",
+      "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "AAAAWn//+74\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 4297
+      },
+      "writtenOn": "2012-08-25T00:28:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "AAAAWn//+/A\u003d",
       "revId": "f2184dfc237f7e21d01aa3fa4d306f24db4544b3",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
