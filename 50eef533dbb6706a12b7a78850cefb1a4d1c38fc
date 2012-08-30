@@ -53,6 +53,23 @@
     },
     {
       "key": {
+        "uuid": "AAAAXH///4g\u003d",
+        "filename": "res/values-nl/strings.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 2881
+      },
+      "writtenOn": "2012-08-30T03:34:20Z",
+      "side": 1,
+      "message": "Overige",
+      "revId": "50eef533dbb6706a12b7a78850cefb1a4d1c38fc",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "AAAAW3///Ts\u003d",
         "filename": "res/values-nl/strings.xml",
         "patchSetId": 2
