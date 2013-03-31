@@ -16,8 +16,11 @@
 
 package com.android.providers.contacts;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
 import android.provider.CallLog.Calls;
 
 import com.android.i18n.phonenumbers.NumberParseException;
@@ -38,9 +41,12 @@ import java.util.Locale;
     private static DefaultCallLogInsertionHelper sInstance;
 
     private final CountryMonitor mCountryMonitor;
+    private final ContentResolver contentResolver;
     private PhoneNumberUtil mPhoneNumberUtil;
     private PhoneNumberOfflineGeocoder mPhoneNumberOfflineGeocoder;
     private final Locale mLocale;
+
+    private static final String GEO_AUTHORITY = "com.android.i18n.phonenumbers.geocoding";
 
     public static synchronized DefaultCallLogInsertionHelper getInstance(Context context) {
         if (sInstance == null) {
@@ -52,6 +58,7 @@ import java.util.Locale;
     private DefaultCallLogInsertionHelper(Context context) {
         mCountryMonitor = new CountryMonitor(context);
         mLocale = context.getResources().getConfiguration().locale;
+        contentResolver = context.getContentResolver();
     }
 
     @Override
@@ -94,6 +101,18 @@ import java.util.Locale;
     public String getGeocodedLocationFor(String number, String countryIso) {
         PhoneNumber structuredPhoneNumber = parsePhoneNumber(number, countryIso);
         if (structuredPhoneNumber != null) {
+
+            try {
+                Uri uri = Uri.parse("content://" + GEO_AUTHORITY + "/" + countryIso + "/" + number);
+                Cursor cursor = contentResolver.query(uri, null, null, null, null);
+
+                if(cursor != null && cursor.getCount() > 0){
+                    cursor.moveToFirst();
+                    return cursor.getString(0);
+                }
+            } catch (Exception e) {
+            }
+
             return getPhoneNumberOfflineGeocoder().getDescriptionForNumber(
                     structuredPhoneNumber, mLocale);
         } else {
