@@ -104,7 +104,20 @@ public class VoicemailContentProvider extends ContentProvider
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+        Cursor c = queryInternal(uri, projection, selection, selectionArgs, sortOrder);
+
+        if (getContext().isPrivacyGuardEnabled()) {
+            Log.d("VoicemailContentProvider", "Voicemail query from application in incognito mode! pid=" + Binder.getCallingPid());
+            MemoryCursor mc = new MemoryCursor(null, c.getColumnNames());
+            c.close();
+            return mc;
+        }
+
+        return c;
+    }
+
+    private Cursor queryInternal(Uri uri, String[] projection, String selection, String[] selectionArgs,
             String sortOrder) {
         UriData uriData = checkPermissionsAndCreateUriDataForReadOperation(uri);
         SelectionBuilder selectionBuilder = new SelectionBuilder(selection);

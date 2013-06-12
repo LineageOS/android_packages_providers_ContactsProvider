@@ -4757,6 +4757,21 @@ public class ContactsProvider2 extends AbstractContactsProvider
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
             String sortOrder, CancellationSignal cancellationSignal) {
+        Cursor c = queryInternal(uri, projection, selection, selectionArgs,
+                sortOrder, cancellationSignal);
+
+        if (getContext().isPrivacyGuardEnabled()) {
+            Log.d(TAG, "Contacts query from application with privacy guard! pid=" + Binder.getCallingPid());
+            MemoryCursor mc = new MemoryCursor(null, c.getColumnNames());
+            c.close();
+            return mc;
+        }
+
+        return c;
+    }
+
+    private Cursor queryInternal(Uri uri, String[] projection, String selection, String[] selectionArgs,
+                String sortOrder, CancellationSignal cancellationSignal) {
         if (VERBOSE_LOGGING) {
             Log.v(TAG, "query: uri=" + uri + "  projection=" + Arrays.toString(projection) +
                     "  selection=[" + selection + "]  args=" + Arrays.toString(selectionArgs) +
