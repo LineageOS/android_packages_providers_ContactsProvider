@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ba076199_48beb400",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "private",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_28bb8010",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "private",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_c8c984ae",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 136,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "{ } missing and indention is off.",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_a8ce50b2",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 139,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "{ } missing",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_68c17880",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 140,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "No need for the else clause.",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_28e4a039",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 149,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "boolean isFirstName",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_08d0bc52",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 168,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "if (isFirstName) {",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_e8d44848",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 171,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "{ } missing",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba076199_48e7d440",
+        "filename": "src/com/android/providers/contacts/HanziToPinyin.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 211,
+      "author": {
+        "id": 1063
+      },
+      "writtenOn": "2013-09-09T20:45:38Z",
+      "side": 1,
+      "message": "tokenize(character, token, i \u003d\u003d 0);\n\n(no need for the variable)",
+      "revId": "797f38f6ce37429fd5ea5f4f15b202b11f506332",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
