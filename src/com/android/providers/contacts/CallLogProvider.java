@@ -51,6 +51,9 @@ public class CallLogProvider extends ContentProvider {
     private static final String EXCLUDE_VOICEMAIL_SELECTION = getInequalityClause(
             Calls.TYPE, Calls.VOICEMAIL_TYPE);
 
+    private static final int EXPIRY_LIMIT = 500;
+    private static final int DROP_LIMIT = 5000;
+
     private static final int CALLS = 1;
 
     private static final int CALLS_ID = 2;
@@ -98,6 +101,7 @@ public class CallLogProvider extends ContentProvider {
     private boolean mUseStrictPhoneNumberComparation;
     private VoicemailPermissions mVoicemailPermissions;
     private CallLogInsertionHelper mCallLogInsertionHelper;
+    private long mFirstExpiredRowId;
 
     @Override
     public boolean onCreate() {
@@ -112,6 +116,7 @@ public class CallLogProvider extends ContentProvider {
                     com.android.internal.R.bool.config_use_strict_phone_number_comparation);
         mVoicemailPermissions = new VoicemailPermissions(context);
         mCallLogInsertionHelper = createCallLogInsertionHelper(context);
+        mFirstExpiredRowId = getFirstExpiredRowId();
         if (Log.isLoggable(Constants.PERFORMANCE_TAG, Log.DEBUG)) {
             Log.d(Constants.PERFORMANCE_TAG, "CallLogProvider.onCreate finish");
         }
@@ -142,6 +147,9 @@ public class CallLogProvider extends ContentProvider {
         final int match = sURIMatcher.match(uri);
         switch (match) {
             case CALLS:
+                if (getIntParam(uri, "include_expired", 0) == 0) {
+                    selectionBuilder.addClause(Calls._ID + " > " + mFirstExpiredRowId);
+                }
                 break;
 
             case CALLS_ID: {
@@ -160,6 +168,9 @@ public class CallLogProvider extends ContentProvider {
                 } else {
                     qb.appendWhere(Calls.NUMBER_PRESENTATION + "!="
                             + Calls.PRESENTATION_ALLOWED);
+                }
+                if (getIntParam(uri, "include_expired", 0) == 0) {
+                    selectionBuilder.addClause(Calls._ID + " > " + mFirstExpiredRowId);
                 }
                 break;
             }
@@ -245,6 +256,8 @@ public class CallLogProvider extends ContentProvider {
 
         long rowId = getDatabaseModifier(mCallsInserter).insert(copiedValues);
         if (rowId > 0) {
+            markExpiredRows();
+            mFirstExpiredRowId = getFirstExpiredRowId();
             return ContentUris.withAppendedId(uri, rowId);
         }
         return null;
@@ -358,6 +371,27 @@ public class CallLogProvider extends ContentProvider {
                     String.format("Uri %s cannot be used for voicemail record." +
                             " Please set '%s=true' in the uri.", uri,
                             Calls.ALLOW_VOICEMAILS_PARAM_KEY));
+        }
+    }
+
+    private void markExpiredRows() {
+        final SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        db.execSQL("UPDATE " + Tables.CALLS + " SET expired=1 WHERE " + Calls._ID +
+                " <= (SELECT " + Calls._ID + " FROM " + Tables.CALLS + " ORDER BY " +
+                Calls.DATE + " DESC LIMIT 1 OFFSET " + EXPIRY_LIMIT + ")");
+        db.execSQL("DELETE FROM " + Tables.CALLS + " WHERE " + Calls._ID +
+                " <= (SELECT " + Calls._ID + " FROM " + Tables.CALLS + " ORDER BY " +
+                Calls.DATE + " DESC LIMIT 1 OFFSET " + DROP_LIMIT + ")");
+    }
+
+    private long getFirstExpiredRowId() {
+        final SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        final Cursor c = db.rawQuery("SELECT " + Calls._ID + " FROM " + Tables.CALLS +
+                " WHERE expired=1 ORDER BY " + Calls._ID + " DESC LIMIT 1", null);
+        try {
+            return c.moveToFirst() ? c.getLong(0) : -1;
+        } finally {
+            c.close();
         }
     }
 
