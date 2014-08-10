@@ -115,7 +115,7 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
      *   800-899 Kitkat
      * </pre>
      */
-    static final int DATABASE_VERSION = 806;
+    static final int DATABASE_VERSION = 807;
 
     private static final String DATABASE_NAME = "contacts2.db";
     private static final String DATABASE_PRESENCE = "presence_db";
@@ -2556,6 +2556,11 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
             oldVersion = 806;
         }
 
+        if (oldVersion < 807) {
+            upgradeToVersion807(db);
+            oldVersion = 807;
+        }
+
         if (upgradeViewsAndTriggers) {
             createContactsViews(db);
             createGroupsView(db);
@@ -4111,6 +4116,10 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
         } catch (SQLException e) {
             Log.w(TAG, "Exception upgrading contacts2.db from 805 to 806 " + e);
         }
+    }
+
+    private void upgradeToVersion807(SQLiteDatabase db) {
+        db.execSQL("ALTER TABLE " + Tables.CALLS + " ADD expired INTEGER NOT NULL DEFAULT 0;");
     }
 
     public String extractHandleFromEmailAddress(String email) {
