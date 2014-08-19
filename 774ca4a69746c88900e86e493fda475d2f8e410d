@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a1b2928_eb165154",
+        "filename": "src/com/android/providers/contacts/ContactsDatabaseHelper.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 2536,
+      "author": {
+        "id": 4884
+      },
+      "writtenOn": "2014-08-19T19:06:49Z",
+      "side": 1,
+      "message": "upgradeToVersion805(db);",
+      "revId": "774ca4a69746c88900e86e493fda475d2f8e410d",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
