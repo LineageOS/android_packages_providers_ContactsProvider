@@ -115,7 +115,7 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
      *   800-899 Kitkat
      * </pre>
      */
-    static final int DATABASE_VERSION = 807;
+    static final int DATABASE_VERSION = 808;
 
     private static final String DATABASE_NAME = "contacts2.db";
     private static final String DATABASE_PRESENCE = "presence_db";
@@ -2563,6 +2563,13 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
             upgradeSearchIndex = true;
             upgradeViewsAndTriggers = true;
             oldVersion = 807;
+        }
+
+        if (oldVersion < 808) {
+            // Force a dummy update to update index/view/triggers
+            upgradeSearchIndex = true;
+            upgradeViewsAndTriggers = true;
+            oldVersion = 808;
         }
 
         if (upgradeViewsAndTriggers) {
