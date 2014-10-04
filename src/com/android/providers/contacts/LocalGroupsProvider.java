@@ -35,6 +35,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -58,6 +59,8 @@ public class LocalGroupsProvider extends ContentProvider {
 
     private static final int GROUPS_ID = 1;
 
+    private static final int RESTORE_DEFAULT_GROUPS = 2;
+
     private DatabaseHelper mOpenHelper;
 
     private static final UriMatcher urlMatcher = new UriMatcher(
@@ -65,6 +68,7 @@ public class LocalGroupsProvider extends ContentProvider {
     static {
         urlMatcher.addURI(LocalGroups.AUTHORITY, "local-groups", GROUPS);
         urlMatcher.addURI(LocalGroups.AUTHORITY, "local-groups/#", GROUPS_ID);
+        urlMatcher.addURI(LocalGroups.AUTHORITY, "restore-local-groups", RESTORE_DEFAULT_GROUPS);
     }
 
     @Override
@@ -75,6 +79,11 @@ public class LocalGroupsProvider extends ContentProvider {
         switch (match) {
             case GROUPS:
                 count = db.delete(TABLE, selection, selectionArgs);
+                break;
+            case RESTORE_DEFAULT_GROUPS:
+                mOpenHelper.restoreLocalGroups(db, getContext());
+                // Return something, so it can be notified
+                count = 1;
                 break;
         }
         if (count > 0) {
@@ -175,7 +184,22 @@ public class LocalGroupsProvider extends ContentProvider {
                     + LocalGroups.GroupColumns._ID + " INTEGER PRIMARY KEY,"
                     + LocalGroups.GroupColumns.TITLE + " text,"
                     + LocalGroups.GroupColumns.COUNT + " INTEGER);");
+            createDefaultLocalGroups(db, context);
 
+        }
+
+        @Override
+        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+        }
+
+        private void restoreLocalGroups(SQLiteDatabase db, Context context) throws SQLException {
+            db.execSQL("DELETE FROM local_groups;");
+            createDefaultLocalGroups(db, context);
+        }
+
+        private static void createDefaultLocalGroups(SQLiteDatabase db, Context context)
+                throws SQLException {
             db.execSQL("insert into local_groups ("
                     + LocalGroups.GroupColumns.TITLE + ") values ('"
                     + context.getString(R.string.group_family) + "')");
@@ -185,14 +209,7 @@ public class LocalGroupsProvider extends ContentProvider {
             db.execSQL("insert into local_groups ("
                     + LocalGroups.GroupColumns.TITLE + ") values ('"
                     + context.getString(R.string.group_work) + "')");
-
         }
-
-        @Override
-        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
-        }
-
     }
 
 }
