@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a1b2928_40def46d",
+        "filename": "src/com/android/providers/contacts/LocalGroupsProvider.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 182,
+      "author": {
+        "id": 4884
+      },
+      "writtenOn": "2014-10-08T10:41:15Z",
+      "side": 1,
+      "message": "Please wrap to 100 chars.\n\ndb.execSQL(\"insert into local_groups (\"\n        + LocalGroups.GroupColumns.TITLE + \") values (\"\n        + DatabaseUtils.sqlEscapeString(\n                context.getString(R.string.group_family)) + \")\");",
+      "revId": "5a9f741637f4c00b3aed4596db4f6bf24fcea8e7",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a1b2928_20d93884",
+        "filename": "src/com/android/providers/contacts/LocalGroupsProvider.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 185,
+      "author": {
+        "id": 4884
+      },
+      "writtenOn": "2014-10-08T10:41:15Z",
+      "side": 1,
+      "message": "See above",
+      "revId": "5a9f741637f4c00b3aed4596db4f6bf24fcea8e7",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a1b2928_80e80c12",
+        "filename": "src/com/android/providers/contacts/LocalGroupsProvider.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 188,
+      "author": {
+        "id": 4884
+      },
+      "writtenOn": "2014-10-08T10:41:15Z",
+      "side": 1,
+      "message": "Wrap this also to keep code styling consistant",
+      "revId": "5a9f741637f4c00b3aed4596db4f6bf24fcea8e7",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
