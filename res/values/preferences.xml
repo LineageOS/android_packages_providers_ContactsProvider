@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preference_default_contact_name"></string>
+    <string name="preference_default_contact_number"></string>
+    <string name="preference_default_contact_email"></string>
+</resources>
