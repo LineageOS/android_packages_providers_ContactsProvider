@@ -115,7 +115,7 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
      *   800-899 Kitkat
      * </pre>
      */
-    static final int DATABASE_VERSION = 807;
+    static final int DATABASE_VERSION = 808;
 
     private static final String DATABASE_NAME = "contacts2.db";
     private static final String DATABASE_PRESENCE = "presence_db";
@@ -1372,6 +1372,58 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
             dbCreatedIntent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
             mContext.sendBroadcast(dbCreatedIntent, android.Manifest.permission.READ_CONTACTS);
         }
+
+        loadDefaultContact(db);
+    }
+
+    private void loadDefaultContact(SQLiteDatabase db) {
+        Resources resources = mContext.getResources();
+
+        String defaultContactName = resources.getString(
+                R.string.preference_default_contact_name);
+        // TODO: For columns that aren't required create a map of resources
+        String defaultContactNumber = resources.getString(
+                R.string.preference_default_contact_number);
+        String defaultContactEmail = resources.getString(
+                R.string.preference_default_contact_email);
+
+        if (TextUtils.isEmpty(defaultContactName) || TextUtils.isEmpty(defaultContactNumber)
+                || TextUtils.isEmpty(defaultContactEmail)) {
+            return;
+        }
+
+        long accountId = getOrCreateAccountIdInTransaction(null, db);
+        ContentValues values = new ContentValues();
+        values.put(RawContactsColumns.ACCOUNT_ID, accountId);
+        values.put(RawContacts.DISPLAY_NAME_PRIMARY, defaultContactName);
+        long rawContactId = db.insert(Tables.RAW_CONTACTS,
+                ContactsContract.RawContacts.CONTACT_ID, values);
+
+        if (rawContactId == -1) {
+            return;
+        }
+
+        updateRawContactDisplayName(db, rawContactId);
+        values.clear();
+        values.put(Data.RAW_CONTACT_ID, rawContactId);
+        values.put(DataColumns.MIMETYPE_ID, lookupMimeTypeId(StructuredName.CONTENT_ITEM_TYPE, db));
+        values.put(StructuredName.DISPLAY_NAME, defaultContactName);
+        values.put(StructuredName.GIVEN_NAME, defaultContactName);
+        db.insert(Tables.DATA, null, values);
+
+        values.clear();
+        values.put(Data.RAW_CONTACT_ID, rawContactId);
+        values.put(DataColumns.MIMETYPE_ID, lookupMimeTypeId(Phone.CONTENT_ITEM_TYPE, db));
+        values.put(Phone.NUMBER, defaultContactNumber);
+        values.put(Phone.TYPE, Phone.TYPE_WORK);
+        db.insert(Tables.DATA, null, values);
+
+        values.clear();
+        values.put(Data.RAW_CONTACT_ID, rawContactId);
+        values.put(DataColumns.MIMETYPE_ID, lookupMimeTypeId(Email.CONTENT_ITEM_TYPE, db));
+        values.put(Email.DATA, defaultContactEmail);
+        values.put(Email.TYPE, Email.TYPE_WORK);
+        db.insert(Tables.DATA, null, values);
     }
 
     protected void initializeAutoIncrementSequences(SQLiteDatabase db) {
@@ -2563,6 +2615,12 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
             upgradeSearchIndex = true;
             upgradeViewsAndTriggers = true;
             oldVersion = 807;
+        }
+
+        if (oldVersion < 808) {
+            // Add default contact
+            upgradeToVersion808(db);
+            oldVersion = 808;
         }
 
         if (upgradeViewsAndTriggers) {
@@ -4132,6 +4190,10 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    private void upgradeToVersion808(SQLiteDatabase db) {
+        loadDefaultContact(db);
+    }
+
     public String extractHandleFromEmailAddress(String email) {
         Rfc822Token[] tokens = Rfc822Tokenizer.tokenize(email);
         if (tokens.length == 0) {
@@ -4615,10 +4677,14 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
      * @return ID of the specified account, or null if the account doesn't exist.
      */
     public Long getAccountIdOrNull(AccountWithDataSet accountWithDataSet) {
+        return getAccountIdOrNull(accountWithDataSet, getWritableDatabase());
+    }
+
+    public Long getAccountIdOrNull(AccountWithDataSet accountWithDataSet, SQLiteDatabase db) {
         if (accountWithDataSet == null) {
             accountWithDataSet = AccountWithDataSet.LOCAL;
         }
-        final SQLiteStatement select = getWritableDatabase().compileStatement(
+        final SQLiteStatement select = db.compileStatement(
                 "SELECT " + AccountsColumns._ID +
                 " FROM " + Tables.ACCOUNTS +
                 " WHERE " +
@@ -4649,14 +4715,19 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
      * This must be used in a transaction, so there's no need for synchronization.
      */
     public long getOrCreateAccountIdInTransaction(AccountWithDataSet accountWithDataSet) {
+        return getOrCreateAccountIdInTransaction(accountWithDataSet, getWritableDatabase());
+    }
+
+    public long getOrCreateAccountIdInTransaction(AccountWithDataSet accountWithDataSet,
+            SQLiteDatabase db) {
         if (accountWithDataSet == null) {
             accountWithDataSet = AccountWithDataSet.LOCAL;
         }
-        Long id = getAccountIdOrNull(accountWithDataSet);
+        Long id = getAccountIdOrNull(accountWithDataSet, db);
         if (id != null) {
             return id;
         }
-        final SQLiteStatement insert = getWritableDatabase().compileStatement(
+        final SQLiteStatement insert = db.compileStatement(
                 "INSERT INTO " + Tables.ACCOUNTS +
                 " (" + AccountsColumns.ACCOUNT_NAME + ", " +
                 AccountsColumns.ACCOUNT_TYPE + ", " +
