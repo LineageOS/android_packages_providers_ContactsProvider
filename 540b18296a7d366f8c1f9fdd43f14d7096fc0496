@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a122d0e_e6d20334",
+        "filename": "src/com/android/providers/contacts/ContactsProvider2.java",
+        "patchSetId": 6
+      },
+      "lineNbr": 1641,
+      "author": {
+        "id": 9813
+      },
+      "writtenOn": "2014-11-14T13:13:06Z",
+      "side": 1,
+      "message": "do you even check for null?",
+      "revId": "540b18296a7d366f8c1f9fdd43f14d7096fc0496",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
