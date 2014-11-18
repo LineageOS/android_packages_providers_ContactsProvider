@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a122d0e_b13af9cb",
+        "filename": "res/values/cm_strings.xml",
+        "patchSetId": 8
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 2881
+      },
+      "writtenOn": "2014-11-18T04:23:08Z",
+      "side": 1,
+      "message": "these strings all need translatable\u003dfalse",
+      "revId": "7e63d3885e016e83b64ccd98f14fcf309be2d6db",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
