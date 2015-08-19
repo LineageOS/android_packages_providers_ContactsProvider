@@ -16,6 +16,24 @@
       "revId": "f684f82395ecfdf3f866068602a3d37a1f752a44",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f201791_493ab1e7",
+        "filename": "src/com/android/providers/contacts/ContactsProvider2.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 1194,
+      "author": {
+        "id": 9528
+      },
+      "writtenOn": "2015-08-19T03:41:58Z",
+      "side": 1,
+      "message": "No idea, didn\u0027t want to break any existing matchers",
+      "parentUuid": "5f201791_a955c51f",
+      "revId": "f684f82395ecfdf3f866068602a3d37a1f752a44",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
