@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "7f287b81_09695a24",
+        "filename": "src/com/android/providers/contacts/ContactsProvider2.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 1923,
+      "author": {
+        "id": 11035
+      },
+      "writtenOn": "2015-10-10T00:34:08Z",
+      "side": 1,
+      "message": "The \u0027default contact\u0027 construct above is being used by micromax devices right now. Couldn\u0027t do multiple contacts, hence this patch. Thats a todo for after this patch goes in to move to one solution for preloading contacts.",
+      "parentUuid": "7f287b81_09c27a86",
+      "revId": "72f6bd600d8321713ccaf3a65f18eda5f9ea4f23",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "7f287b81_e9be0efe",
         "filename": "src/com/android/providers/contacts/ContactsProvider2.java",
         "patchSetId": 1
@@ -36,6 +54,24 @@
     },
     {
       "key": {
+        "uuid": "7f287b81_695b3e87",
+        "filename": "src/com/android/providers/contacts/ContactsProvider2.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 1928,
+      "author": {
+        "id": 11035
+      },
+      "writtenOn": "2015-10-10T00:34:08Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "7f287b81_e9be0efe",
+      "revId": "72f6bd600d8321713ccaf3a65f18eda5f9ea4f23",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "7f287b81_495e42e7",
         "filename": "src/com/android/providers/contacts/util/PreloadedContactsFileParser.java",
         "patchSetId": 1
@@ -47,6 +83,24 @@
       "writtenOn": "2015-10-09T22:44:14Z",
       "side": 1,
       "message": "over length",
+      "revId": "72f6bd600d8321713ccaf3a65f18eda5f9ea4f23",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f287b81_e975eefb",
+        "filename": "src/com/android/providers/contacts/util/PreloadedContactsFileParser.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 11035
+      },
+      "writtenOn": "2015-10-10T00:34:08Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "7f287b81_495e42e7",
       "revId": "72f6bd600d8321713ccaf3a65f18eda5f9ea4f23",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
