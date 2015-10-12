@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * to persist that information.
  *
  * Details about the json schema and encoding specification for the properties can be found in
- * the preloaded_contacts.schema file under 'res/raw'
+ * the preloaded_contacts_schema.json file under 'res/raw'
  */
 public class PreloadedContactsFileParser {
 
