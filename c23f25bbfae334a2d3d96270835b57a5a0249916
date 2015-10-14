@@ -22,6 +22,30 @@
       "revId": "c23f25bbfae334a2d3d96270835b57a5a0249916",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f287b81_26ac358b",
+        "filename": "src/com/android/providers/contacts/ContactsProvider2.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 1930,
+      "author": {
+        "id": 11035
+      },
+      "writtenOn": "2015-10-14T02:01:59Z",
+      "side": 1,
+      "message": "the first check in the above boolean expression will fail in that case",
+      "parentUuid": "7f287b81_c693314f",
+      "range": {
+        "startLine": 1930,
+        "startChar": 50,
+        "endLine": 1930,
+        "endChar": 53
+      },
+      "revId": "c23f25bbfae334a2d3d96270835b57a5a0249916",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
