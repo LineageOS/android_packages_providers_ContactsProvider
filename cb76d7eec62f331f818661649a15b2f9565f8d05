@@ -22,6 +22,30 @@
       "revId": "cb76d7eec62f331f818661649a15b2f9565f8d05",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5faad753_b02ac3e4",
+        "filename": "src/com/android/providers/contacts/ContactsProvider2.java",
+        "patchSetId": 4
+      },
+      "lineNbr": 6910,
+      "author": {
+        "id": 12937
+      },
+      "writtenOn": "2016-04-26T20:42:51Z",
+      "side": 1,
+      "message": "whoops, forgot about that little guy. guess i\u0027m not done...",
+      "parentUuid": "5faad753_9004677d",
+      "range": {
+        "startLine": 6910,
+        "startChar": 18,
+        "endLine": 6910,
+        "endChar": 30
+      },
+      "revId": "cb76d7eec62f331f818661649a15b2f9565f8d05",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
