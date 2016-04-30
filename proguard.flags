@@ -1,3 +1,4 @@
+-dontwarn com.cyanogen.ambient.**
 -keep class com.android.providers.contacts.ContactsDatabaseHelper {
   <init>(...);
 }
