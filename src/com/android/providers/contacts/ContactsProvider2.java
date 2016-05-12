@@ -113,6 +113,7 @@ import android.telephony.PhoneNumberUtils;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 import com.android.common.content.ProjectionMap;
 import com.android.common.content.SyncStateContentProviderHelper;
 import com.android.common.io.MoreCloseables;
@@ -1834,7 +1835,12 @@ public class ContactsProvider2 extends AbstractContactsProvider
             }
 
             case BACKGROUND_TASK_ADD_DEFAULT_CONTACT: {
+                System.out.println("executing background add contact task");
+                Toast.makeText(getContext(), "contact preload task", Toast.LENGTH_LONG).show();
+
                 if (shouldAttemptPreloadingContacts()) {
+                    System.out.println("should attempt preloading contacts");
+                    Toast.makeText(getContext(), "attempting preloading contacts", Toast.LENGTH_LONG).show();
                     try {
                         InputStream inputStream = getContext().getResources().openRawResource(
                                 R.raw.preloaded_contacts);
@@ -1846,10 +1852,11 @@ public class ContactsProvider2 extends AbstractContactsProvider
                         getContext().getContentResolver().applyBatch(ContactsContract.AUTHORITY,
                                 cpOperations);
                         // persist the completion of the transaction
+                        Toast.makeText(getContext(), "preloading contacts complete", Toast.LENGTH_LONG).show();
                         onPreloadingContactsComplete();
 
                     } catch (NotFoundException nfe) {
-                        System.out.println();
+                        System.out.println("contacts preload FNF");
                         nfe.printStackTrace();
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -1858,6 +1865,9 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     } catch (OperationApplicationException e) {
                         e.printStackTrace();
                     }
+                } else {
+                    System.out.println("should attempt preloading contacts false");
+                    Toast.makeText(getContext(), "preloading contacts failed", Toast.LENGTH_LONG).show();
                 }
 
                 break;
@@ -1868,6 +1878,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
     private boolean shouldAttemptPreloadingContacts() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        System.out.println("config bool preload contacts : " + getContext().getResources().getBoolean(R.bool.config_preload_contacts));
+        System.out.println("pref preload cotnacts done : " + !prefs.getBoolean(PREF_PRELOADED_CONTACTS_ADDED, false));
         return getContext().getResources().getBoolean(R.bool.config_preload_contacts) &&
                 !prefs.getBoolean(PREF_PRELOADED_CONTACTS_ADDED, false);
     }
