@@ -42,4 +42,4 @@ LOCAL_PROGUARD_FLAG_FILES := proguard.flags
 include $(BUILD_PACKAGE)
 
 # Use the following include to make our test apk.
-include $(call all-makefiles-under,$(LOCAL_PATH))
+# include $(call all-makefiles-under,$(LOCAL_PATH))

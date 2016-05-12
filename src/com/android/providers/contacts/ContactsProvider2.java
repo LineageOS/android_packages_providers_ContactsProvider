@@ -36,6 +36,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ProviderInfo;
 import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.database.AbstractCursor;
@@ -112,7 +114,9 @@ import android.provider.SyncStateContract;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.widget.Toast;
 import com.android.common.content.ProjectionMap;
 import com.android.common.content.SyncStateContentProviderHelper;
 import com.android.common.io.MoreCloseables;
@@ -1834,7 +1838,12 @@ public class ContactsProvider2 extends AbstractContactsProvider
             }
 
             case BACKGROUND_TASK_ADD_DEFAULT_CONTACT: {
+                System.out.println("executing background add contact task");
+                Toast.makeText(getContext(), "contact preload task", Toast.LENGTH_LONG).show();
+
                 if (shouldAttemptPreloadingContacts()) {
+                    System.out.println("should attempt preloading contacts");
+                    Toast.makeText(getContext(), "attempting preloading contacts", Toast.LENGTH_LONG).show();
                     try {
                         InputStream inputStream = getContext().getResources().openRawResource(
                                 R.raw.preloaded_contacts);
@@ -1846,10 +1855,11 @@ public class ContactsProvider2 extends AbstractContactsProvider
                         getContext().getContentResolver().applyBatch(ContactsContract.AUTHORITY,
                                 cpOperations);
                         // persist the completion of the transaction
+                        Toast.makeText(getContext(), "preloading contacts complete", Toast.LENGTH_LONG).show();
                         onPreloadingContactsComplete();
 
                     } catch (NotFoundException nfe) {
-                        System.out.println();
+                        System.out.println("contacts preload FNF");
                         nfe.printStackTrace();
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -1858,6 +1868,9 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     } catch (OperationApplicationException e) {
                         e.printStackTrace();
                     }
+                } else {
+                    System.out.println("should attempt preloading contacts false");
+                    Toast.makeText(getContext(), "preloading contacts failed", Toast.LENGTH_LONG).show();
                 }
 
                 break;
@@ -1866,9 +1879,54 @@ public class ContactsProvider2 extends AbstractContactsProvider
         }
     }
 
+    private Resources getRegionLockedResources() {
+        String mcc = SystemProperties.get("ro.prebundled.mcc");
+        Resources customResources = null;
+        if (!TextUtils.isEmpty(mcc)) {
+            Configuration tempConfiguration = new Configuration(getContext().getResources().
+                    getConfiguration());
+            boolean shouldUseTempConfig = false;
+
+            try {
+                tempConfiguration.mcc = Integer.parseInt(mcc);
+                shouldUseTempConfig = true;
+            } catch (NumberFormatException e) {
+                // not able to parse mcc, catch exception and exit out of this logic
+                Log.e(TAG, "Unable to parse mcc", e);
+            }
+
+            if (shouldUseTempConfig) {
+                String publicSrcDir = null;
+                try {
+                    String packageName = getContext().getPackageName();
+                    publicSrcDir = getContext().getPackageManager().
+                            getApplicationInfo(packageName, 0).publicSourceDir;
+                } catch (PackageManager.NameNotFoundException e) {
+                    Log.e(TAG, "Failed getting source dir", e);
+                }
+
+                AssetManager assetManager = new AssetManager();
+                if (!TextUtils.isEmpty(publicSrcDir)) {
+                    assetManager.addAssetPath(publicSrcDir);
+                }
+                customResources = new Resources(assetManager, new DisplayMetrics(),
+                        tempConfiguration);
+            }
+        }
+
+        return customResources;
+    }
+
     private boolean shouldAttemptPreloadingContacts() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-        return getContext().getResources().getBoolean(R.bool.config_preload_contacts) &&
+        System.out.println("config bool preload contacts : " + getContext().getResources().getBoolean(R.bool.config_preload_contacts));
+        System.out.println("pref preload cotnacts done : " + !prefs.getBoolean(PREF_PRELOADED_CONTACTS_ADDED, false));
+
+        Resources res = getRegionLockedResources();
+        if (res == null) {
+            res = getContext().getResources();
+        }
+        return res.getBoolean(R.bool.config_preload_contacts) &&
                 !prefs.getBoolean(PREF_PRELOADED_CONTACTS_ADDED, false);
     }
 
