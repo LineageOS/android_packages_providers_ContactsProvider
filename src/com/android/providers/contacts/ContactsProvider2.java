@@ -1835,6 +1835,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
             case BACKGROUND_TASK_ADD_DEFAULT_CONTACT: {
                 if (shouldAttemptPreloadingContacts()) {
+                    System.out.println("should attempt preloading contacts");
                     try {
                         InputStream inputStream = getContext().getResources().openRawResource(
                                 R.raw.preloaded_contacts);
@@ -1849,7 +1850,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
                         onPreloadingContactsComplete();
 
                     } catch (NotFoundException nfe) {
-                        System.out.println();
+                        System.out.println("contacts preload FNF");
                         nfe.printStackTrace();
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -1858,6 +1859,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     } catch (OperationApplicationException e) {
                         e.printStackTrace();
                     }
+                } else {
+                    System.out.println("should attempt preloading contacts false");
                 }
 
                 break;
