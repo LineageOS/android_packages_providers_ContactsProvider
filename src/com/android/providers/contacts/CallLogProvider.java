@@ -641,6 +641,8 @@ public class CallLogProvider extends ContentProvider {
 
                     }
                 }
+            } catch(Exception e) {
+                Log.e(TAG, e.toString());
             } finally {
                 cursor.close();
             }
