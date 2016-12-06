@@ -229,13 +229,6 @@ public class CallLogDatabaseHelper {
     }
 
     /**
-     * Add the {@link Calls.VIA_NUMBER} Column to the CallLog Database.
-     */
-    private void upgradeToVersion3(SQLiteDatabase db) {
-        db.execSQL("ALTER TABLE " + Tables.CALLS + " ADD " + CALLS_OPERATOR + " TEXT" + ";");  
-    }
-
-    /**
      * Add the {@link Status.SOURCE_TYPE} Column to the VoicemailStatus Database.
      */
     private void upgradeToVersion3(SQLiteDatabase db) {
