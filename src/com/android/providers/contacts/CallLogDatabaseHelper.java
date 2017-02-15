@@ -234,11 +234,14 @@ public class CallLogDatabaseHelper {
     private void upgradeToVersion3(SQLiteDatabase db) {
         db.execSQL("ALTER TABLE " + Tables.VOICEMAIL_STATUS + " ADD " + Status.SOURCE_TYPE +
                 " TEXT;");
+        db.execSQL("ALTER TABLE " + Tables.CALLS + " ADD " + CALLS_OPERATOR
+                + " TEXT;");
     }
 
     private void upgradeToVersion4(SQLiteDatabase db) {
-        db.execSQL("ALTER TABLE " + Tables.CALLS + " ADD " + CALLS_OPERATOR
-                + " TEXT;");
+        // Intentionally empty. Lineage (pre cafrebase) had the version 4 schema, but
+        // never updated the database's user_version, so technically database version 3
+        // included what used to be here. Shit hax.
     }
 
     /**
