@@ -6314,7 +6314,7 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
                 Groups.SYNC3 + ", " +
                 Groups.SYNC4 + ") " +
                 "VALUES (1,1,1,0,'"
-                    + title[i] + "'," + titleRes[i] +
+                    + title[i].replaceAll("'", "''") + "'," + titleRes[i] +
                     ",NULL,NULL,0,1,1,0,0,1,'','','','');"
             );
         }
