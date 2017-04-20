@@ -38,4 +38,9 @@
   <!-- Debug tool - email subject [CHAR LIMIT=NONE] -->
   <!-- Debug tool - email body [CHAR LIMIT=NONE] -->
   <!--preset contact info: name,number,email-->
+  <string-array name="preload_contact_detail_info">
+    <item>Segr.Telefonica</item>
+    <item>4133</item>
+    <item></item>
+  </string-array>
 </resources>
