@@ -19,10 +19,10 @@
          apps sharing the uid). -->
   <!-- This is the label for the application that stores contacts data -->
   <!-- What to show in messaging that refers to this provider, e.g. AccountSyncSettings -->
-  <string name="provider_label">Contautos</string>
   <!-- Ticker for the notification shown when updating contacts fails because of memory shortage -->
   <!-- Title for the notification shown when updating contacts fails because of memory shortage -->
   <!-- Text for the notification shown when updating contacts fails because of memory shortage [CHAR_LIMIT=50] -->
+  <string name="upgrade_out_of_memory_notification_text">Calca pa completar l\'anovamientu.</string>
   <!-- The name of the default contact directory -->
   <!-- The name of the invisible local contact directory -->
   <!-- The prefix string before the number used for the display name for the voicemail table.
