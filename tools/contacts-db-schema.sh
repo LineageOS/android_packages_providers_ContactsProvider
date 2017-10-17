@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Copyright (C) 2015 The Android Open Source Project
 #
@@ -23,9 +23,9 @@ db=/data/data/com.android.providers.contacts/databases/contacts2.db
 # Otherwise sqlite3 would create an empty file owned by root.
 
 # Sed inserts a newline after each ( and ,
-adb shell "(ls $db >/dev/null)&& sqlite3 $db \"select name, sql from sqlite_master where type in('table','index') order by name\"" |
+adb shell "(ls "$db" >/dev/null)&& sqlite3 "$db" \"select name, sql from sqlite_master where type in('table','index') order by name\"" |
     sed -e 's/\([(,]\)/\1\n  /g'
 echo "> sqlite_stat1"
-adb shell "(ls $db >/dev/null)&& sqlite3 $db \"select * from sqlite_stat1 order by tbl, idx, stat\""
+adb shell "(ls "$db" >/dev/null)&& sqlite3 "$db" \"select * from sqlite_stat1 order by tbl, idx, stat\""
 
 
