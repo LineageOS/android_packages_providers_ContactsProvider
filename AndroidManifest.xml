@@ -38,6 +38,7 @@
 
     <application android:process="android.process.acore"
         android:label="@string/app_label"
+        android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
         android:forceQueryable="true"
         android:usesCleartextTraffic="false">
