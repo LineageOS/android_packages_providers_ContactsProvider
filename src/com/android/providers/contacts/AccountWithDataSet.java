@@ -62,7 +62,7 @@ public class AccountWithDataSet {
     }
 
     public boolean isLocalAccount() {
-        return (mAccountName == null) && (mAccountType == null);
+        return "DEVICE".equals(mAccountName) && "com.android.contacts".equals(mAccountType);
     }
 
     @Override
