@@ -16,6 +16,24 @@
       "revId": "ed2d8bcd5c4bdbbece7e35f62b52cb17ff1297ab",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3c5bc00_81ebf99a",
+        "filename": "src/com/android/providers/contacts/CallLogDatabaseHelper.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 2681
+      },
+      "writtenOn": "2018-05-15T19:23:03Z",
+      "side": 1,
+      "message": "Derp. Fixed",
+      "parentUuid": "79397db4_2606eeef",
+      "revId": "ed2d8bcd5c4bdbbece7e35f62b52cb17ff1297ab",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
