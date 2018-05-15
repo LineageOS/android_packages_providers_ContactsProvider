@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "79397db4_2606eeef",
+        "filename": "src/com/android/providers/contacts/CallLogDatabaseHelper.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 8461
+      },
+      "writtenOn": "2018-05-15T19:20:14Z",
+      "side": 1,
+      "message": "just oldversion \u003c 6 plz",
+      "revId": "ed2d8bcd5c4bdbbece7e35f62b52cb17ff1297ab",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
