@@ -21,6 +21,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.CallLog.Calls;
 import android.provider.VoicemailContract;
@@ -205,11 +206,17 @@ public class CallLogDatabaseHelper {
                 upgradeToVersion4(db);
             }
 
-            if (oldVersion < 5) {
-                upgradeToVersion5(db);
-            }
-
+            // In Lineage 14.1, we changed the version to 5 so the AOSP version 5 upgrade was skipped
             if (oldVersion < 6) {
+                try {
+                    upgradeToVersion5(db);
+                } catch (SQLiteException e) {
+                    // For the case of not upgrading from 14.1, the column already exists. Ignore duplicate column exceptions
+                    if (!e.getMessage().contains("duplicate")) {
+                        throw e;
+                    }
+                }
+
                 upgradeToVersion6(db);
             }
 
