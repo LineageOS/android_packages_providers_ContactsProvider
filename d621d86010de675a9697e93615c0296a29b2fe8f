@@ -22,6 +22,24 @@
       "revId": "d621d86010de675a9697e93615c0296a29b2fe8f",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2bad1ad1_9e5f0706",
+        "filename": "src/com/android/providers/contacts/AccountWithDataSet.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 11883
+      },
+      "writtenOn": "2018-09-11T17:42:41Z",
+      "side": 1,
+      "message": "More logical but not null safe",
+      "parentUuid": "41314513_0945ebe7",
+      "revId": "d621d86010de675a9697e93615c0296a29b2fe8f",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
