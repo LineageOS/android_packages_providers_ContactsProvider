@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "41314513_0945ebe7",
+        "filename": "src/com/android/providers/contacts/AccountWithDataSet.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 13648
+      },
+      "writtenOn": "2018-09-11T16:25:38Z",
+      "side": 1,
+      "message": "I find it more logical to be:\n\nreturn mAccountName.equals(\"DEVICE\") \u0026\u0026 mAccountType.equals(\"com.android.contacts\");",
+      "range": {
+        "startLine": 65,
+        "startChar": 8,
+        "endLine": 65,
+        "endChar": 92
+      },
+      "revId": "d621d86010de675a9697e93615c0296a29b2fe8f",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
