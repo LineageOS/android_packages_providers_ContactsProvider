@@ -221,6 +221,15 @@ public class CallLogDatabaseHelper {
             }
 
             if (oldVersion < 7) {
+                try {
+                    upgradeToVersion6(db);
+                } catch (SQLiteException e) {
+                    // For the case of upgrading from 16.0, the column already exists. Ignore duplicate column exceptions
+                    if (!e.getMessage().contains("duplicate")) {
+                        throw e;
+                    }
+                }
+
                 upgradeToVersion7(db);
             }
 
