@@ -21,6 +21,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.CallLog.Calls;
 import android.provider.VoicemailContract;
@@ -214,6 +215,15 @@ public class CallLogDatabaseHelper {
             }
 
             if (oldVersion < 7) {
+                try {
+                    upgradeToVersion6(db);
+                } catch (SQLiteException e) {
+                    // For the case of upgrading from 16.0, the column already exists. Ignore duplicate column exceptions
+                    if (!e.getMessage().contains("duplicate")) {
+                        throw e;
+                    }
+                }
+
                 upgradeToVersion7(db);
             }
 
