@@ -14,6 +14,6 @@
      limitations under the License.
 -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="provider_label">Kontaktoj</string>
-    <string name="default_directory">Kontaktoj</string>
+    <string name="provider_label">Luchd-aithne</string>
+    <string name="default_directory">Luchd-aithne</string>
 </resources>
