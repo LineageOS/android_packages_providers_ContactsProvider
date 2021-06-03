@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6c9ccf67_5f88fcb2",
+        "filename": "src/com/android/providers/contacts/CallLogBackupAgent.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 11801
+      },
+      "writtenOn": "2021-06-03T19:40:59Z",
+      "side": 1,
+      "message": ":triggered:",
+      "revId": "9d9e2d33f7aa6c3265f0da423a73a3772c905ae3",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": true
+    }
+  ]
+}
