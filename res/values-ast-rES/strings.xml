@@ -17,17 +17,17 @@
     <string name="sharedUserLabel">Aplicaciones básiques d\'Android</string>
     <string name="app_label">Almacenamientu de contautos</string>
     <string name="provider_label">Contautos</string>
-    <string name="upgrade_out_of_memory_notification_ticker">L\'anovamientu de contautos necesita más memoria.</string>
-    <string name="upgrade_out_of_memory_notification_title">Anovando almacenamientu pa contautos</string>
+    <string name="upgrade_out_of_memory_notification_ticker">L\'anovamientu de los contautos precisa más memoria.</string>
+    <string name="upgrade_out_of_memory_notification_title">Anovando l\'almacenamientu pa los contautos</string>
     <string name="upgrade_out_of_memory_notification_text">Calca pa completar l\'anovamientu.</string>
     <string name="default_directory">Contautos</string>
     <string name="local_invisible_directory">Otru</string>
-    <string name="voicemail_from_column">"Mensaxe de voz de "</string>
-    <string name="debug_dump_title">Copiar base de datos de contautos</string>
-    <string name="debug_dump_database_message">Tas a piques de 1) facer una copia de la to base de datos, qu\'inclúi la información rellacionada colos contautos y el rexistru de llamaes nel almacenamientu internu y a 2) unviala per corréu-e. Nun escaezas desaniciar la copia en cuantes la tengas copiada n\'otru preséu o tengas recibío\'l corréu-e.</string>
+    <string name="voicemail_from_column">"Mensaxe de voz de: "</string>
+    <string name="debug_dump_title">Copiar la base de datos de contautos</string>
+    <string name="debug_dump_database_message">Tas a piques de 1) facer una copia de la base de datos de Contautos qu\'inclúi tola información rellacionada colos contautos y tol rexistru de llamaes nel almacenamientu internu, y 2) d\'unviala per corréu electrónicu.  Acuérdate de desaniciar la copia namás que la copies fuera del preséu o se reciba\'l mensaxe de corréu electrónicu.</string>
     <string name="debug_dump_delete_button">Desaniciar agora</string>
     <string name="debug_dump_start_button">Aniciar</string>
-    <string name="debug_dump_email_sender_picker">Esbilla un programa pa unviar el ficheru</string>
-    <string name="debug_dump_email_subject">Base datos de contautos axuntada</string>
-    <string name="debug_dump_email_body">La mio base de datos de contautos con tola información de contautos, va axunta a esti mensaxe. Usa esta información con curiáu.</string>
+    <string name="debug_dump_email_sender_picker">Escueyi un programa pa unviar el ficheru</string>
+    <string name="debug_dump_email_subject">Base de datos de Contautos</string>
+    <string name="debug_dump_email_body">Axunto la mio base de datos de Contautos que contién tola información de los mios contautos.  Remánala con curiáu.</string>
 </resources>
