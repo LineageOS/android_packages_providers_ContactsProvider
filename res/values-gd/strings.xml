@@ -14,20 +14,41 @@
      limitations under the License.
 -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Label for this app's shared user ID (and thus for all other
+         apps sharing the uid). -->
     <string name="sharedUserLabel">Prìomh-aplacaidean Android</string>
+    <!-- This is the label for the application that stores contacts data -->
     <string name="app_label">Stòras an luchd-aithne</string>
+    <!-- What to show in messaging that refers to this provider, e.g. AccountSyncSettings -->
     <string name="provider_label">Luchd-aithne</string>
+    <!-- Ticker for the notification shown when updating contacts fails because of memory shortage -->
     <string name="upgrade_out_of_memory_notification_ticker">Chan eil cuimhne gu leòr airson àrdachadh an luchd-aithne.</string>
+    <!-- Title for the notification shown when updating contacts fails because of memory shortage -->
     <string name="upgrade_out_of_memory_notification_title">Ag àrdachadh stòras an luchd-aithne</string>
+    <!-- Text for the notification shown when updating contacts fails because of memory shortage [CHAR_LIMIT=50] -->
     <string name="upgrade_out_of_memory_notification_text">Thoir gnogag airson an t-àrdachadh a choileanadh.</string>
+    <!-- The name of the default contact directory -->
     <string name="default_directory">Luchd-aithne</string>
+    <!-- The name of the invisible local contact directory -->
     <string name="local_invisible_directory">Luchd-aithne eile</string>
+    <!-- The prefix string before the number used for the display name for the voicemail table.
+         Because of the way this is combined in SQL we can't allow a generic format string.
+         The resulting string will be this string with the number appended to the end.
+         Note that the trailing space is important, and that to achieve it we have to wrap the
+         string in double quotes. -->
     <string name="voicemail_from_column">"Post-gutha o "</string>
+    <!-- Debug tool - title of the dialog which copies the contact database into the external storage. [CHAR LIMIT=NONE] -->
     <string name="debug_dump_title">Dèan lethbhreac de stòr-dàta an luchd-aithne</string>
+    <!-- Debug tool - message shown to the user on the dialog which sends a copy of  the contact database via email or other apps. [CHAR LIMIT=NONE] -->
     <string name="debug_dump_database_message">Cuiridh tu 1) lethbhreac dhen stòr-dàta agad a ghabhas a-staigh gach fiosrachadh mun luchd-aithne agus loga nan gairmean dhan stòras taobh a-staigh agus 2) post-d leis. Cùm an aire gun sguab thu às an lethbhreac nuair a bhios tu air an lethbhreac a chur air uidheam eile no air am post-d fhaighinn.</string>
+    <!-- Debug tool - dialog button- delete file now [CHAR LIMIT=NONE] -->
     <string name="debug_dump_delete_button">Sguab às an-dràsta</string>
+    <!-- Debug tool - dialog button - start copying [CHAR LIMIT=NONE] -->
     <string name="debug_dump_start_button">Tòisich</string>
+    <!-- Debug tool - email subject [CHAR LIMIT=NONE] -->
     <string name="debug_dump_email_sender_picker">Tagh prògram gus am faidhle agad a chur</string>
+    <!-- Debug tool - email subject [CHAR LIMIT=NONE] -->
     <string name="debug_dump_email_subject">Stòr-dàta luchd-aithne</string>
+    <!-- Debug tool - email body [CHAR LIMIT=NONE] -->
     <string name="debug_dump_email_body">Tha stòr-dàta an luchd-aithne agam an cois seo le fiosrachadh mun luchd-aithne uile agam ’na bhroinn. Bi faiceallach leis.</string>
 </resources>
