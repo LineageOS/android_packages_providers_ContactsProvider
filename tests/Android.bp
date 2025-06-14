@@ -17,6 +17,7 @@ android_test {
         "android.content.pm.flags-aconfig-java",
         "contactsprovider_flags_java_lib",
         "platform-compat-test-rules",
+        "telecom-util-lib",
     ],
     libs: [
         "android.test.runner.stubs.system",

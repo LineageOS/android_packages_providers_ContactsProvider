@@ -40,7 +40,6 @@ import android.provider.CallLog.Calls;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.VoicemailContract.Voicemails;
-import android.telecom.CallerInfo;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telephony.SubscriptionInfo;
@@ -51,6 +50,8 @@ import com.android.providers.contacts.testutil.CommonDatabaseUtils;
 import com.android.providers.contacts.util.ContactsPermissions;
 import com.android.providers.contacts.util.FileUtilities;
 import com.android.providers.contacts.util.PhoneAccountHandleMigrationUtils;
+import com.android.server.telecom.util.CallLogUtils;
+import com.android.server.telecom.util.CallerInfo;
 
 import org.junit.Assert;
 
@@ -447,7 +448,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
 
         // Allow self-calls in order to add the call
         ContactsPermissions.ALLOW_SELF_CALL = true;
-        Uri uri = Calls.addCall(ci, getMockContext(), "1-800-263-7643",
+        Uri uri = CallLogUtils.addCall(ci, getMockContext(), "1-800-263-7643",
                 Calls.PRESENTATION_ALLOWED, Calls.OUTGOING_TYPE, 0, subscription, 2000,
                 40, null, MISSED_REASON_NOT_MISSED, 0);
         ContactsPermissions.ALLOW_SELF_CALL = false;
