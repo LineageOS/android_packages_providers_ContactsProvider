@@ -51,7 +51,7 @@ public class CallLogDatabaseHelper {
     private static final String TAG = "CallLogDatabaseHelper";
 
     @VisibleForTesting
-    static final int DATABASE_VERSION = 12;
+    static final int DATABASE_VERSION = 13;
 
     private static final boolean DEBUG = false; // DON'T SUBMIT WITH TRUE
 
@@ -176,6 +176,7 @@ public class CallLogDatabaseHelper {
                     Calls.IS_PHONE_ACCOUNT_MIGRATION_PENDING + " INTEGER NOT NULL DEFAULT 0," +
                     Calls.IS_BUSINESS_CALL + " INTEGER NOT NULL DEFAULT 0," +
                     Calls.ASSERTED_DISPLAY_NAME + " TEXT," +
+                    Calls.UUID + " TEXT," +
 
                     Voicemails._DATA + " TEXT," +
                     Voicemails.HAS_CONTENT + " INTEGER," +
@@ -258,6 +259,10 @@ public class CallLogDatabaseHelper {
 
             if (oldVersion < 12) {
                 upgradeToVersion12(db);
+            }
+
+            if (oldVersion < 13) {
+                upgradeToVersion13(db);
             }
         }
 
@@ -546,6 +551,14 @@ public class CallLogDatabaseHelper {
             db.execSQL("ALTER TABLE calls ADD asserted_display_name TEXT");
         } catch (SQLException ignore) {
             Log.i(TAG, String.format("upgradeToVersion12: SQLException occurred e=[%s]", ignore));
+        }
+    }
+
+    private void upgradeToVersion13(SQLiteDatabase db) {
+        try {
+            db.execSQL("ALTER TABLE calls ADD uuid TEXT");
+        } catch (SQLException ignore) {
+            Log.i(TAG, String.format("upgradeToVersion13: SQLException occurred e=[%s]", ignore));
         }
     }
 

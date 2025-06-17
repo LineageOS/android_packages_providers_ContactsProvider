@@ -257,6 +257,7 @@ public class CallLogProvider extends ContentProvider {
                 Calls.IS_PHONE_ACCOUNT_MIGRATION_PENDING);
         sCallsProjectionMap.put(Calls.IS_BUSINESS_CALL, Calls.IS_BUSINESS_CALL);
         sCallsProjectionMap.put(Calls.ASSERTED_DISPLAY_NAME, Calls.ASSERTED_DISPLAY_NAME);
+        sCallsProjectionMap.put(Calls.UUID, Calls.UUID);
     }
 
     /**
