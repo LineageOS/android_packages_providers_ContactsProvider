@@ -116,6 +116,8 @@ public class CallLogProvider extends ContentProvider {
     private static final String EXCLUDE_HIDDEN_SELECTION = getEqualityClause(
             Calls.PHONE_ACCOUNT_HIDDEN, 0);
 
+    private static final String CLAUSE_VOIP_LOG = "(" + Calls.UUID + " is NOT NULL)";
+
     private static final String CALL_COMPOSER_PICTURE_DIRECTORY_NAME = "call_composer_pics";
     private static final String CALL_COMPOSER_ALL_USERS_DIRECTORY_NAME = "all_users";
 
@@ -181,6 +183,8 @@ public class CallLogProvider extends ContentProvider {
 
     private static final int CALL_COMPOSER_PICTURE = 5;
 
+    private static final int CALLS_VOIP = 6;
+
     private static final String UNHIDE_BY_PHONE_ACCOUNT_QUERY =
             "UPDATE " + Tables.CALLS + " SET " + Calls.PHONE_ACCOUNT_HIDDEN + "=0 WHERE " +
             Calls.PHONE_ACCOUNT_COMPONENT_NAME + "=? AND " + Calls.PHONE_ACCOUNT_ID + "=?;";
@@ -205,6 +209,7 @@ public class CallLogProvider extends ContentProvider {
                 CALL_COMPOSER_NEW_PICTURE);
         sURIMatcher.addURI(CallLog.SHADOW_AUTHORITY, CallLog.CALL_COMPOSER_SEGMENT + "/*",
                 CALL_COMPOSER_PICTURE);
+        sURIMatcher.addURI(CallLog.AUTHORITY, "calls/voip", CALLS_VOIP);
     }
 
     public static final ArrayMap<String, String> sCallsProjectionMap;
@@ -259,6 +264,14 @@ public class CallLogProvider extends ContentProvider {
         sCallsProjectionMap.put(Calls.ASSERTED_DISPLAY_NAME, Calls.ASSERTED_DISPLAY_NAME);
         sCallsProjectionMap.put(Calls.UUID, Calls.UUID);
     }
+
+    public static final ArrayMap<String, String> sVoIPCallsProjectionMap;
+    static {
+        // VoIP Calls projection map
+        sVoIPCallsProjectionMap = new ArrayMap<>();
+        sVoIPCallsProjectionMap.put(Calls.DATE, Calls.DATE);
+        sVoIPCallsProjectionMap.put(Calls.UUID, Calls.UUID);
+    };
 
     /**
      * Subscription change will trigger ACTION_PHONE_ACCOUNT_REGISTERED that broadcasts new
@@ -461,14 +474,14 @@ public class CallLogProvider extends ContentProvider {
 
         mStats.incrementQueryStats(callingUid);
         try {
-            return queryInternal(uri, projection, selection, selectionArgs, sortOrder);
+            return queryInternal(uri, projection, selection, selectionArgs, sortOrder, callingUid);
         } finally {
             mStats.finishOperation(callingUid);
         }
     }
 
     private Cursor queryInternal(Uri uri, String[] projection, String selection,
-            String[] selectionArgs, String sortOrder) {
+            String[] selectionArgs, String sortOrder, int uid) {
         if (VERBOSE_LOGGING) {
             Log.v(TAG, "query: uri=" + uri + "  projection=" + Arrays.toString(projection) +
                     "  selection=[" + selection + "]  args=" + Arrays.toString(selectionArgs) +
@@ -523,6 +536,16 @@ public class CallLogProvider extends ContentProvider {
                 break;
             }
 
+            case CALLS_VOIP: {
+                qb.setProjectionMap(sVoIPCallsProjectionMap);
+                String clause = buildUuidClause(uid);
+                if (TextUtils.isEmpty(clause)) {
+                    return null;
+                }
+                selectionBuilder.addClause(clause);
+                break;
+            }
+
             default:
                 throw new IllegalArgumentException("Unknown URL " + uri);
         }
@@ -535,6 +558,13 @@ public class CallLogProvider extends ContentProvider {
         }
 
         final SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        if (VERBOSE_LOGGING) {
+            Log.v(TAG, "projectionMap=" + qb.getProjectionMap()
+                    + ", projection=" + Arrays.toString(projection)
+                    + ", selection=" + selectionBuilder.build()
+                    + ", selectionArgs=" + Arrays.toString(selectionArgs)
+                    + ", sortOrder=" + sortOrder + ", limitClause=" + limitClause);
+        }
         final Cursor c = qb.query(db, projection, selectionBuilder.build(), selectionArgs, null,
                 null, sortOrder, limitClause);
 
@@ -547,6 +577,31 @@ public class CallLogProvider extends ContentProvider {
             c.setNotificationUri(getContext().getContentResolver(), CallLog.CONTENT_URI);
         }
         return c;
+    }
+
+    @Nullable
+    private String buildUuidClause(int uid) {
+        String[] packages = getContext().getPackageManager().getPackagesForUid(uid);
+        if (packages == null || packages.length == 0) {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder();
+        for (String p: packages) {
+            if (!TextUtils.isEmpty(p)) {
+                if (builder.length() > 0) {
+                    builder.append(" OR ");
+                }
+                builder.append("(");
+                builder.append(Calls.PHONE_ACCOUNT_COMPONENT_NAME + " like '" + p + "%'");
+                builder.append(")");
+            }
+        }
+
+        if (builder.isEmpty()) {
+            return null;
+        }
+
+        return CLAUSE_VOIP_LOG + " AND " + builder.toString();
     }
 
     /**
@@ -999,9 +1054,9 @@ public class CallLogProvider extends ContentProvider {
         final int matchedUriId = sURIMatcher.match(uri);
         switch (matchedUriId) {
             case CALLS:
-                int count =  createDatabaseModifier(db, hasReadVoicemailPermission).delete(
+                int count = createDatabaseModifier(db, hasReadVoicemailPermission).delete(
                         Tables.CALLS, selectionBuilder.build(), selectionArgs);
-                String logStr = String.format(Locale. getDefault(),
+                String logStr = String.format(Locale.getDefault(),
                         "delete uid/pid=%d/%d, uri=%s, numChanged=%d",
                         Binder.getCallingUid(), Binder.getCallingPid(), uri, count);
                 Log.i(TAG, logStr);
@@ -1011,6 +1066,23 @@ public class CallLogProvider extends ContentProvider {
                 // TODO(hallliu): implement deletion of file when the corresponding calllog entry
                 // gets deleted as well.
                 return deleteCallComposerPicture(uri);
+            case CALLS_VOIP: {
+                String clause = buildUuidClause(Binder.getCallingUid());
+                if (TextUtils.isEmpty(clause)) {
+                    Log.w(TAG, "deleteInternal: no packages found for uid " + Binder.getCallingUid()
+                            + ", returning 0");
+                    return 0;
+                }
+                selectionBuilder.addClause(clause);
+                count = createDatabaseModifier(db, hasReadVoicemailPermission).delete(
+                    Tables.CALLS, selectionBuilder.build(), selectionArgs);
+                logStr = String.format(Locale.getDefault(),
+                    "delete uid/pid=%d/%d, uri=%s, numChanged=%d",
+                    Binder.getCallingUid(), Binder.getCallingPid(), uri, count);
+                Log.i(TAG, logStr);
+                mLocalLog.log(logStr);
+                return count;
+            }
             default:
                 throw new UnsupportedOperationException("Cannot delete that URL: " + uri);
         }

@@ -74,6 +74,10 @@
             android:exported="true"
             android:readPermission="android.permission.READ_CALL_LOG"
             android:writePermission="android.permission.WRITE_CALL_LOG">
+            <path-permission
+                    android:pathPrefix="/calls/voip"
+                    android:readPermission="android.permission.MANAGE_OWN_CALLS"
+                    android:writePermission="android.permission.MANAGE_OWN_CALLS" />
         </provider>
 
         <!-- Separate provider for the locations stored in call provider.
