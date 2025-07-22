@@ -20,66 +20,72 @@ import android.net.Uri;
 
 public final class LogFields {
 
-    private final int apiType;
+    private final int mApiType;
 
-    private final int uriType;
+    private final int mUriType;
 
-    // The type is from LogUtils.TaskType
-    private final int taskType;
+    private final int mTaskType;
 
-    private final boolean callerIsSyncAdapter;
+    private final boolean mCallerIsSyncAdapter;
 
-    private final long startNanos;
+    private final long mStartNanos;
 
-    private Exception exception;
+    private final Exception mException;
 
-    private Uri resultUri;
+    private final Uri mResultUri;
 
-    private int resultCount;
+    private final int mResultCount;
 
-    private int mMethodCalled;
+    private final int mMethodCalled;
 
-    private int uid;
+    private final int mUid;
 
     public LogFields(
-            int apiType, int uriType, int taskType, boolean callerIsSyncAdapter, long startNanos) {
-        this.apiType = apiType;
-        this.uriType = uriType;
-        this.taskType = taskType;
-        this.callerIsSyncAdapter = callerIsSyncAdapter;
-        this.startNanos = startNanos;
+            int apiType, int uriType, int taskType, boolean callerIsSyncAdapter, long startNanos,
+            Exception exception, Uri resultUri, int resultCount, int methodCalled, int uid
+    ) {
+        mApiType = apiType;
+        mUriType = uriType;
+        mTaskType = taskType;
+        mCallerIsSyncAdapter = callerIsSyncAdapter;
+        mStartNanos = startNanos;
+        mException = exception;
+        mResultUri = resultUri;
+        mResultCount = resultCount;
+        mMethodCalled = methodCalled;
+        mUid = uid;
     }
 
     public int getApiType() {
-        return apiType;
+        return mApiType;
     }
 
     public int getUriType() {
-        return uriType;
+        return mUriType;
     }
 
     public int getTaskType() {
-        return taskType;
+        return mTaskType;
     }
 
     public boolean isCallerIsSyncAdapter() {
-        return callerIsSyncAdapter;
+        return mCallerIsSyncAdapter;
     }
 
     public long getStartNanos() {
-        return startNanos;
+        return mStartNanos;
     }
 
     public Exception getException() {
-        return exception;
+        return mException;
     }
 
     public Uri getResultUri() {
-        return resultUri;
+        return mResultUri;
     }
 
     public int getResultCount() {
-        return resultCount;
+        return mResultCount;
     }
 
     public int getMethodCalled() {
@@ -87,21 +93,20 @@ public final class LogFields {
     }
 
     public int getUid() {
-        return uid;
+        return mUid;
     }
 
     public static final class Builder {
-        private int apiType;
-        private int uriType;
-        private int taskType;
-        private boolean callerIsSyncAdapter;
-        private long startNanos;
-        private Exception exception;
-        private Uri resultUri;
-        private int resultCount;
+        private int mApiType;
+        private int mUriType;
+        private int mTaskType;
+        private boolean mCallerIsSyncAdapter;
+        private long mStartNanos;
+        private Exception mException;
+        private Uri mResultUri;
+        private int mResultCount;
         private int mMethodCalled;
-
-        private int uid;
+        private int mUid;
 
         private Builder() {
         }
@@ -111,42 +116,42 @@ public final class LogFields {
         }
 
         public Builder setApiType(int apiType) {
-            this.apiType = apiType;
+            this.mApiType = apiType;
             return this;
         }
 
         public Builder setUriType(int uriType) {
-            this.uriType = uriType;
+            this.mUriType = uriType;
             return this;
         }
 
         public Builder setTaskType(int taskType) {
-            this.taskType = taskType;
+            this.mTaskType = taskType;
             return this;
         }
 
         public Builder setCallerIsSyncAdapter(boolean callerIsSyncAdapter) {
-            this.callerIsSyncAdapter = callerIsSyncAdapter;
+            this.mCallerIsSyncAdapter = callerIsSyncAdapter;
             return this;
         }
 
         public Builder setStartNanos(long startNanos) {
-            this.startNanos = startNanos;
+            this.mStartNanos = startNanos;
             return this;
         }
 
         public Builder setException(Exception exception) {
-            this.exception = exception;
+            this.mException = exception;
             return this;
         }
 
         public Builder setResultUri(Uri resultUri) {
-            this.resultUri = resultUri;
+            this.mResultUri = resultUri;
             return this;
         }
 
         public Builder setResultCount(int resultCount) {
-            this.resultCount = resultCount;
+            this.mResultCount = resultCount;
             return this;
         }
 
@@ -162,19 +167,22 @@ public final class LogFields {
         }
 
         public Builder setUid(int uid) {
-            this.uid = uid;
+            this.mUid = uid;
             return this;
         }
 
         public LogFields build() {
-            LogFields logFields =
-                    new LogFields(apiType, uriType, taskType, callerIsSyncAdapter, startNanos);
-            logFields.resultCount = this.resultCount;
-            logFields.exception = this.exception;
-            logFields.resultUri = this.resultUri;
-            logFields.uid = this.uid;
-            logFields.mMethodCalled = this.mMethodCalled;
-            return logFields;
+            return new LogFields(
+                    mApiType,
+                    mUriType,
+                    mTaskType,
+                    mCallerIsSyncAdapter,
+                    mStartNanos,
+                    mException,
+                    mResultUri,
+                    mResultCount,
+                    mMethodCalled,
+                    mUid);
         }
     }
 }

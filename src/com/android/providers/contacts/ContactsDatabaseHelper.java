@@ -152,9 +152,10 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
      *   1500-1599 S
      *   1600-1699 T
      *   1700-1799 V
+     *   1800-1899 C
      * </pre>
      */
-    static final int DATABASE_VERSION = 1701;
+    static final int DATABASE_VERSION = 1800;
     private static final int MINIMUM_SUPPORTED_VERSION = 700;
 
     @VisibleForTesting
@@ -724,7 +725,8 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
         String CONCRETE_ACCOUNT_NAME = Tables.ACCOUNTS + "." + ACCOUNT_NAME;
         String CONCRETE_ACCOUNT_TYPE = Tables.ACCOUNTS + "." + ACCOUNT_TYPE;
         String CONCRETE_DATA_SET = Tables.ACCOUNTS + "." + DATA_SET;
-
+        String ACCOUNT_ATTRIBUTES = Settings.ACCOUNT_ATTRIBUTES;
+        String HAS_OWNER_SET_ATTRIBUTES = Settings.HAS_OWNER_SET_ATTRIBUTES;
     }
 
     public interface DirectoryColumns {
@@ -1244,7 +1246,10 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
                 AccountsColumns.SIM_EF_TYPE + " INTEGER, " +
                 AccountsColumns.UNGROUPED_VISIBLE + " INTEGER NOT NULL DEFAULT 0," +
                 AccountsColumns.SHOULD_SYNC + " INTEGER NOT NULL DEFAULT 1," +
-                AccountsColumns.IS_DEFAULT + " INTEGER NOT NULL DEFAULT 0" + ");");
+                AccountsColumns.IS_DEFAULT + " INTEGER NOT NULL DEFAULT 0, "
+                + AccountsColumns.ACCOUNT_ATTRIBUTES + " INTEGER, "
+                + AccountsColumns.HAS_OWNER_SET_ATTRIBUTES + " INTEGER NOT NULL DEFAULT 0 "
+                + ");");
 
         // Note, there are two sets of the usage stat columns: LR_* and RAW_*.
         // RAW_* contain the real values, which clients can't access.  The column names start
@@ -2674,6 +2679,12 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
             oldVersion = 1701;
         }
 
+        if (isUpgradeRequired(oldVersion, newVersion, 1800)) {
+            upgradeToVersion1800(db);
+            oldVersion = 1800;
+        }
+
+
         // We extracted "calls" and "voicemail_status" at this point, but we can't remove them here
         // yet, until CallLogDatabaseHelper moves the data.
 
@@ -3540,6 +3551,20 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    private void upgradeToVersion1800(SQLiteDatabase db) {
+        try {
+            db.execSQL(
+                    "ALTER TABLE accounts ADD " + AccountsColumns.ACCOUNT_ATTRIBUTES
+                            + " INTEGER;");
+            db.execSQL(
+                    "ALTER TABLE accounts ADD " + AccountsColumns.HAS_OWNER_SET_ATTRIBUTES
+                            + " INTEGER NOT NULL DEFAULT 0;");
+            Log.i(TAG, "Upgrading to version 1800");
+        } catch (SQLException ignore) {
+            Log.v(TAG, "Version 1800: Columns already exist, skipping upgrade steps.");
+        }
+    }
+
     protected void migrateIccIdToSubId() {
         mPhoneAccountHandleMigrationUtils.migrateIccIdToSubId(getWritableDatabase());
     }
@@ -4266,7 +4291,8 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
      */
     public void setDefaultAccount(String accountName, String accountType) {
         if (TextUtils.isEmpty(accountName) ^ TextUtils.isEmpty(accountType)) {
-            throw new IllegalArgumentException("Account name or type is null.");
+            throw new IllegalArgumentException(
+                    "Account name and type must be both null or both non-null.");
         }
         SQLiteDatabase db = getWritableDatabase();
         db.execSQL(
@@ -4288,6 +4314,137 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
         } else {
             db.update(Tables.ACCOUNTS, values, AccountsColumns.CONCRETE_ID + "=" + accountId, null);
         }
+    }
+
+    /**
+     * Set account capabilities column for the given account name, account type, and data set.
+     */
+    public void setAccountAttributes(String accountName, String accountType, String dataSet,
+            long accountAttributes, boolean isAppOverride) {
+        if (TextUtils.isEmpty(accountName) ^ TextUtils.isEmpty(accountType)) {
+            throw new IllegalArgumentException("Account name or type is null.");
+        }
+
+        if (TextUtils.isEmpty(accountName) && !TextUtils.isEmpty(dataSet)) {
+            throw new IllegalArgumentException("Data set must be null when account name is null.");
+        }
+
+        SQLiteDatabase db = getWritableDatabase();
+
+        db.beginTransaction();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(AccountsColumns.ACCOUNT_ATTRIBUTES, accountAttributes);
+            if (isAppOverride) {
+                values.put(AccountsColumns.HAS_OWNER_SET_ATTRIBUTES, 1);
+            }
+
+            Long accountId = getAccountIdOrNull(
+                    new AccountWithDataSet(accountName, accountType, dataSet));
+            if (accountId == null) {
+                if (!TextUtils.isEmpty(accountName)) {
+                    values.put(AccountsColumns.ACCOUNT_NAME, accountName);
+                }
+                if (!TextUtils.isEmpty(accountType)) {
+                    values.put(AccountsColumns.ACCOUNT_TYPE, accountType);
+                }
+                if (!TextUtils.isEmpty(dataSet)) {
+                    values.put(AccountsColumns.DATA_SET, dataSet);
+                }
+                db.insert(Tables.ACCOUNTS, null, values);
+            } else {
+                db.update(Tables.ACCOUNTS, values, AccountsColumns.CONCRETE_ID + "=" + accountId,
+                        null);
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+
+    /**
+     * Get account capabilities column's value for the given account name, account type, and data
+     * set.
+     * If account is not found or account capabilities wasn't not set, returns NULL.
+     */
+    public Long getAccountAttributes(String accountName, String accountType, String dataSet) {
+        String whereClause = composeWhereClauseWithAccountAndDataSet(accountName, accountType,
+                dataSet);
+
+        // Construct the full SQL query
+        String sqlQuery = "SELECT " + AccountsColumns.ACCOUNT_ATTRIBUTES
+                + " FROM " + Tables.ACCOUNTS
+                + " WHERE " + whereClause;
+
+        try (Cursor c = getReadableDatabase().rawQuery(sqlQuery, null)) {
+            if (c.moveToFirst()) {
+                if (c.isNull(0)) { // Check if the value is NOT NULL
+                    // Account is found, but no capabilities are stored
+                    return null;
+                } else {
+                    return c.getLong(0);
+                }
+            }
+        } catch (Exception e) {
+            Log.i(TAG, "Error in reading account capabilities:" + e);
+        }
+        // Account is not found.
+        return null;
+    }
+
+    private static String composeWhereClauseWithAccountAndDataSet(String accountName,
+            String accountType,
+            String dataSet) {
+        StringBuilder whereClause = new StringBuilder();
+        whereClause.append(AccountsColumns.ACCOUNT_NAME)
+                .append(" IS ")
+                .append(MoreDatabaseUtils.sqlEscapeNullableString(accountName));
+
+        whereClause.append(" AND ")
+                .append(AccountsColumns.ACCOUNT_TYPE)
+                .append(" IS ")
+                .append(MoreDatabaseUtils.sqlEscapeNullableString(accountType));
+
+        whereClause.append(" AND ")
+                .append(AccountsColumns.DATA_SET)
+                .append(" IS ")
+                .append(MoreDatabaseUtils.sqlEscapeNullableString(dataSet));
+        return whereClause.toString();
+    }
+
+
+    /**
+     * Checks if the account capabilities for the given account name, account type, and data set
+     * have been explicitly set/overridden by the account owner package.
+     *
+     * @param accountName The name of the account.
+     * @param accountType The type of the account.
+     * @param dataSet     The data set of the account (can be null).
+     * @return True if the capabilities have been explicitly set by the owner, false otherwise
+     * (e.g., if system-managed or account not found).
+     */
+    public boolean getHasOwnerSetCapabilities(String accountName, String accountType,
+            String dataSet) {
+        String whereClause = composeWhereClauseWithAccountAndDataSet(accountName,
+                accountType,
+                dataSet);
+
+        String sqlQuery = "SELECT " + AccountsColumns.HAS_OWNER_SET_ATTRIBUTES
+                + " FROM " + Tables.ACCOUNTS
+                + " WHERE " + whereClause;
+
+        try (Cursor c = getReadableDatabase().rawQuery(sqlQuery, null)) {
+            if (c.moveToFirst()) {
+                // HAS_OWNER_SET_CAPABILITIES is INTEGER (0 or 1) and NOT NULL DEFAULT 0
+                // So, c.getInt(0) will always return 0 or 1.
+                return c.getInt(0) == 1;
+            }
+        } catch (Exception e) {
+            Log.i(TAG, "Error in reading has_owner_set_capabilities:" + e);
+        }
+        // If the account is not found, or an error occurs,
+        return false;
     }
 
     /**

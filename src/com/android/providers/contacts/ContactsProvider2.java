@@ -20,6 +20,7 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.provider.Flags.newDefaultAccountApiEnabled;
+import static android.provider.Flags.newAccountAttributesApiEnabled;
 
 import static com.android.providers.contacts.flags.Flags.cp2SyncSearchIndexFlag;
 import static com.android.providers.contacts.flags.Flags.disableCp2AccountMoveFlag;
@@ -2778,8 +2779,124 @@ public class ContactsProvider2 extends AbstractContactsProvider
             response.putInt(RawContacts.DefaultAccount.KEY_NUMBER_OF_MOVABLE_SIM_CONTACTS,
                     count);
             return response;
+        } else if (Settings.GET_ACCOUNT_ATTRIBUTES_METHOD.equals(method)) {
+            if (!newAccountAttributesApiEnabled()) {
+                throw new UnsupportedOperationException(
+                        "Querying account attributes is not supported");
+            }
+            ContactsPermissions.enforceCallingOrSelfPermission(getContext(), READ_PERMISSION);
+
+            final Bundle response = new Bundle();
+
+            String accountName = extras.getString(Settings.ACCOUNT_NAME);
+            String accountType = extras.getString(Settings.ACCOUNT_TYPE);
+            String dataSet = extras.getString(Settings.DATA_SET);
+
+            AccountWithDataSet accountWithDataSet = new AccountWithDataSet(accountName, accountType,
+                    dataSet);
+
+            Account[] systemAccounts = AccountManager.get(getContext()).getAccounts();
+            List<SimAccount> simAccounts = mDbHelper.get().getAllSimAccounts();
+
+            if (!accountWithDataSet.isLocalAccount()
+                    && !accountWithDataSet.inSystemAccounts(systemAccounts)
+                    && !accountWithDataSet.inSimAccounts(simAccounts)) {
+                throw new IllegalArgumentException(
+                        "Cannot get account attributes for invalid accounts.");
+            }
+
+            Long accountAttributes = getAccountAttributes(accountWithDataSet);
+            if (accountAttributes == null) {
+                // Account capabilities wasn't initialized. Initialize now.
+                accountAttributes = initializeAccountAttributes(accountWithDataSet);
+            }
+
+            if (accountAttributes == null) {
+                Log.e(TAG, "Failed to initialize the account capabilities.");
+            } else {
+                response.putLong(Settings.KEY_ACCOUNT_ATTRIBUTES, accountAttributes);
+            }
+            return response;
+        } else if (Settings.SET_ACCOUNT_ATTRIBUTES_METHOD.equals(method)) {
+            if (!newAccountAttributesApiEnabled()) {
+                throw new UnsupportedOperationException(
+                        "Modifying account attributes is not supported");
+            }
+            // TODO: checking whether the calling package owns the account.
+            ContactsPermissions.enforceCallingOrSelfPermission(getContext(), WRITE_PERMISSION);
+
+            String accountName = extras.getString(Settings.ACCOUNT_NAME);
+            String accountType = extras.getString(Settings.ACCOUNT_TYPE);
+            String dataSet = extras.getString(Settings.DATA_SET);
+            AccountWithDataSet accountWithDataSet = new AccountWithDataSet(accountName, accountType,
+                    dataSet);
+
+            Account[] systemAccounts = AccountManager.get(getContext()).getAccounts();
+            List<SimAccount> simAccounts = mDbHelper.get().getAllSimAccounts();
+
+            if (!accountWithDataSet.isLocalAccount()
+                    && !accountWithDataSet.inSystemAccounts(systemAccounts)
+                    && !accountWithDataSet.inSimAccounts(simAccounts)) {
+                throw new IllegalArgumentException(
+                        "Cannot overwrite account capabilities for invalid accounts.");
+            }
+
+            setAccountAttributes(accountWithDataSet,
+                    extras.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES));
+            return new Bundle();
         }
         return null;
+    }
+
+    private Long initializeAccountAttributes(AccountWithDataSet accountWithDataSet) {
+        mDbHelper.get().setAccountAttributes(accountWithDataSet.getAccountName(),
+                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(), 0L, false);
+        return getAccountAttributes(accountWithDataSet);
+    }
+
+    private Long getAccountAttributes(AccountWithDataSet accountWithDataSet) {
+        return mDbHelper.get().getAccountAttributes(accountWithDataSet.getAccountName(),
+                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
+    }
+
+    private void setAccountAttributes(AccountWithDataSet accountWithDataSet, long capabilities,
+            boolean isAppOverride) {
+        mDbHelper.get().setAccountAttributes(accountWithDataSet.getAccountName(),
+                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(), capabilities,
+                isAppOverride);
+    }
+
+    private void setAccountAttributes(AccountWithDataSet accountWithDataSet,
+            long attributes) {
+        final long dataOriginMask =
+                Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL
+                        | Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_SIM
+                        | Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD;
+
+        final long syncModeMask =
+                Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC
+                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC;
+
+        final long allDefinedCapabilities =
+                dataOriginMask | syncModeMask
+                        | Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED;
+
+        if ((attributes & ~allDefinedCapabilities) != 0) {
+            throw new IllegalArgumentException("An undefined attribute bit was provided.");
+        }
+
+        // Check for semantic conflicts in the new state:
+        // Check DATA_ORIGIN category: ensure at most one bit is set.
+        // TODO(b/432284382): do we want to also enforce at least one bits is set?
+        final long dataOriginBits = attributes & dataOriginMask;
+        if ((dataOriginBits & (dataOriginBits - 1)) != 0) {
+            throw new IllegalStateException(
+                    "Conflict: The resulting attributes would contain more than one DATA_ORIGIN"
+                            + " type.");
+        }
+
+        setAccountAttributes(accountWithDataSet, attributes,
+                true);
     }
 
     private static LogFields.Builder getCallMethodLogBuilder() {

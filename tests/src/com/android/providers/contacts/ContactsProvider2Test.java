@@ -22,6 +22,7 @@ import static com.android.providers.contacts.TestUtils.dumpCursor;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
+
 import android.accounts.Account;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -41,6 +42,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -117,6 +119,7 @@ import com.google.android.collect.Lists;
 import com.google.android.collect.Sets;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -9854,12 +9857,102 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
         // Set NULL account as default account.
         bundle = new Bundle();
         mResolver.call(ContactsContract.AUTHORITY_URI, Settings.SET_DEFAULT_ACCOUNT_METHOD,
-            null, bundle);
+                null, bundle);
 
         response = mResolver.call(ContactsContract.AUTHORITY_URI,
                 Settings.QUERY_DEFAULT_ACCOUNT_METHOD, null, null);
         account = response.getParcelable(Settings.KEY_DEFAULT_ACCOUNT);
         assertNull(account);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED)
+    public void testAccountAttributesSetAndQuery_flagDisabled() {
+        mActor.setAccounts(new Account[]{mAccount});
+        Assert.assertThrows(UnsupportedOperationException.class,
+                () -> queryAccountAttributes(mAccount.name, mAccount.type, null));
+
+        Assert.assertThrows(UnsupportedOperationException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
+                        Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD, 0L));
+        Assert.assertThrows(UnsupportedOperationException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
+                        Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                        Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED)
+    public void testAccountAttributesSetAndQuery() {
+        mActor.setAccounts(new Account[]{mAccount});
+
+        // Initially, account category should be UNKNOWN
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                0L);
+
+        updateAccountAttributes(mAccount.name, mAccount.type, null,
+                0L, Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Update to CAPABILITY_DATA_TYPE_CUSTOM_DECLARED and CAPABILITY_SYNC_MODE_DOWNLOAD_ONLY
+        updateAccountAttributes(mAccount.name, mAccount.type, null,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+
+        // Update attributes to the same value as before
+        updateAccountAttributes(mAccount.name, mAccount.type, null,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+
+        // Clear all attributes.
+        updateAccountAttributes(mAccount.name, mAccount.type, null,
+                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
+                0L);
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null, 0L);
+    }
+
+    private void updateAccountAttributes(String accountName, String accountType, String dataSet,
+            long expectedPreviousCapabilities, long newCapabilities) {
+        Bundle setBundle = new Bundle();
+        setBundle.putString(Settings.ACCOUNT_NAME, accountName);
+        setBundle.putString(Settings.ACCOUNT_TYPE, accountType);
+        if (dataSet != null) {
+            setBundle.putString(Settings.DATA_SET, dataSet);
+        }
+        setBundle.putLong(Settings.KEY_ACCOUNT_ATTRIBUTES, newCapabilities);
+        mResolver.call(ContactsContract.AUTHORITY_URI,
+                Settings.SET_ACCOUNT_ATTRIBUTES_METHOD,
+                null, setBundle);
+    }
+
+    private void queryAndAssertAccountAttributes(String accountName, String accountType,
+            String dataSet, long attributes) {
+        assertEquals(attributes, queryAccountAttributes(accountName, accountType, dataSet));
+    }
+
+    private long queryAccountAttributes(String accountName, String accountType, String dataSet) {
+        Bundle queryBundle = new Bundle();
+        queryBundle.putString(Settings.ACCOUNT_NAME, accountName);
+        queryBundle.putString(Settings.ACCOUNT_TYPE, accountType);
+
+        if (dataSet != null) {
+            queryBundle.putString(Settings.DATA_SET, dataSet);
+        }
+
+        Bundle response = mResolver.call(ContactsContract.AUTHORITY_URI,
+                Settings.GET_ACCOUNT_ATTRIBUTES_METHOD, null, queryBundle);
+        return response.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES);
     }
 
     @Test

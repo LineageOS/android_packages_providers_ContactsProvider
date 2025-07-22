@@ -16,6 +16,7 @@ android_app {
     ],
     static_libs: [
         "ContactsProvider-change-ids",
+        "contactsprovider_statslog_java_lib",
         "android-common",
         "com.android.vcard",
         "contactsprovider_flags_java_lib",
@@ -40,7 +41,6 @@ android_app {
     },
 }
 
-
 java_library {
     name: "ContactsProvider-change-ids",
     srcs: ["src/com/android/providers/contacts/ChangeIds.java"],
@@ -64,4 +64,17 @@ aconfig_declarations {
 java_aconfig_library {
     name: "contactsprovider_flags_java_lib",
     aconfig_declarations: "contactsprovider_flags",
+}
+
+java_library {
+    name: "contactsprovider_statslog_java_lib",
+    srcs: [":statslog-contactsprovider-java-gen"],
+}
+
+genrule {
+    name: "statslog-contactsprovider-java-gen",
+    tools: ["stats-log-api-gen"],
+    cmd: "$(location stats-log-api-gen) --java $(out) --module contactsprovider " +
+        "--javaPackage com.android.providers.contacts.util --javaClass ContactsProviderStatsLog",
+    out: ["com/android/providers/contacts/util/ContactsProviderStatsLog.java"],
 }

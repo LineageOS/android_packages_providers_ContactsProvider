@@ -329,7 +329,9 @@ public class ContactsDatabaseHelperUpgradeTest extends BaseDatabaseHelperUpgrade
             new TableColumn(AccountsColumns.SIM_EF_TYPE, INTEGER, false, null),
             new TableColumn(AccountsColumns.UNGROUPED_VISIBLE, INTEGER, true, "0"),
             new TableColumn(AccountsColumns.SHOULD_SYNC, INTEGER, true, "1"),
-            new TableColumn(AccountsColumns.IS_DEFAULT, INTEGER, true, "0")
+            new TableColumn(AccountsColumns.IS_DEFAULT, INTEGER, true, "0"),
+            new TableColumn(AccountsColumns.ACCOUNT_ATTRIBUTES, INTEGER, false, null),
+            new TableColumn(AccountsColumns.HAS_OWNER_SET_ATTRIBUTES, INTEGER, true, "0")
     };
 
     private static final TableColumn[] CONTACTS_COLUMNS = new TableColumn[] {
