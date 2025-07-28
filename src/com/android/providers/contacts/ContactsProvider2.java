@@ -2796,19 +2796,34 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     dataSet);
 
             Account[] systemAccounts = AccountManager.get(getContext()).getAccounts();
-            List<SimAccount> simAccounts = mDbHelper.get().getAllSimAccounts();
-
-            if (!accountWithDataSet.isLocalAccount()
-                    && !accountWithDataSet.inSystemAccounts(systemAccounts)
-                    && !accountWithDataSet.inSimAccounts(simAccounts)) {
+            boolean isSystemOrLocalAccount = accountWithDataSet.isLocalAccount()
+                    || accountWithDataSet.inSystemAccounts(systemAccounts);
+            if (!isSystemOrLocalAccount
+                    && !accountWithDataSet.inSimAccounts(mDbHelper.get().getAllSimAccounts())) {
                 throw new IllegalArgumentException(
                         "Cannot get account attributes for invalid accounts.");
             }
-
             Long accountAttributes = getAccountAttributes(accountWithDataSet);
             if (accountAttributes == null) {
                 // Account capabilities wasn't initialized. Initialize now.
-                accountAttributes = initializeAccountAttributes(accountWithDataSet);
+                final SQLiteDatabase db = mDbHelper.get().getWritableDatabase();
+                db.beginTransaction();
+                try {
+                    // Re-query the fresh SIM account state inside the same transaction with
+                    // account attribute initialization, so that  if the SIM account state
+                    // changed since last call, the account attributes
+                    // initialization is based on an up-to-date SIM account.
+                    if (!isSystemOrLocalAccount && !accountWithDataSet.inSimAccounts(
+                            mDbHelper.get().getAllSimAccounts())) {
+                        throw new IllegalArgumentException(
+                                "Account state changed and is now invalid");
+                    }
+
+                    accountAttributes = initializeAccountAttributes(accountWithDataSet);
+                    db.setTransactionSuccessful();
+                } finally {
+                    db.endTransaction();
+                }
             }
 
             if (accountAttributes == null) {
@@ -2832,17 +2847,24 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     dataSet);
 
             Account[] systemAccounts = AccountManager.get(getContext()).getAccounts();
-            List<SimAccount> simAccounts = mDbHelper.get().getAllSimAccounts();
+            boolean isSystemOrLocalAccount = accountWithDataSet.isLocalAccount()
+                    || accountWithDataSet.inSystemAccounts(systemAccounts);
 
-            if (!accountWithDataSet.isLocalAccount()
-                    && !accountWithDataSet.inSystemAccounts(systemAccounts)
-                    && !accountWithDataSet.inSimAccounts(simAccounts)) {
-                throw new IllegalArgumentException(
-                        "Cannot overwrite account capabilities for invalid accounts.");
+            final SQLiteDatabase db = mDbHelper.get().getWritableDatabase();
+            db.beginTransaction();
+
+            try {
+                if (!isSystemOrLocalAccount
+                        && !accountWithDataSet.inSimAccounts(mDbHelper.get().getAllSimAccounts())) {
+                    throw new IllegalArgumentException(
+                            "Cannot overwrite account capabilities for invalid accounts.");
+                }
+                setAccountAttributes(accountWithDataSet,
+                        extras.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES));
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
             }
-
-            setAccountAttributes(accountWithDataSet,
-                    extras.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES));
             return new Bundle();
         }
         return null;

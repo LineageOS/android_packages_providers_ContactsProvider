@@ -4331,37 +4331,30 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
 
         SQLiteDatabase db = getWritableDatabase();
 
-        db.beginTransaction();
-        try {
-            ContentValues values = new ContentValues();
-            values.put(AccountsColumns.ACCOUNT_ATTRIBUTES, accountAttributes);
-            if (isAppOverride) {
-                values.put(AccountsColumns.HAS_OWNER_SET_ATTRIBUTES, 1);
-            }
+        ContentValues values = new ContentValues();
+        values.put(AccountsColumns.ACCOUNT_ATTRIBUTES, accountAttributes);
+        if (isAppOverride) {
+            values.put(AccountsColumns.HAS_OWNER_SET_ATTRIBUTES, 1);
+        }
 
-            Long accountId = getAccountIdOrNull(
-                    new AccountWithDataSet(accountName, accountType, dataSet));
-            if (accountId == null) {
-                if (!TextUtils.isEmpty(accountName)) {
-                    values.put(AccountsColumns.ACCOUNT_NAME, accountName);
-                }
-                if (!TextUtils.isEmpty(accountType)) {
-                    values.put(AccountsColumns.ACCOUNT_TYPE, accountType);
-                }
-                if (!TextUtils.isEmpty(dataSet)) {
-                    values.put(AccountsColumns.DATA_SET, dataSet);
-                }
-                db.insert(Tables.ACCOUNTS, null, values);
-            } else {
-                db.update(Tables.ACCOUNTS, values, AccountsColumns.CONCRETE_ID + "=" + accountId,
-                        null);
+        Long accountId = getAccountIdOrNull(
+                new AccountWithDataSet(accountName, accountType, dataSet));
+        if (accountId == null) {
+            if (!TextUtils.isEmpty(accountName)) {
+                values.put(AccountsColumns.ACCOUNT_NAME, accountName);
             }
-            db.setTransactionSuccessful();
-        } finally {
-            db.endTransaction();
+            if (!TextUtils.isEmpty(accountType)) {
+                values.put(AccountsColumns.ACCOUNT_TYPE, accountType);
+            }
+            if (!TextUtils.isEmpty(dataSet)) {
+                values.put(AccountsColumns.DATA_SET, dataSet);
+            }
+            db.insert(Tables.ACCOUNTS, null, values);
+        } else {
+            db.update(Tables.ACCOUNTS, values, AccountsColumns.CONCRETE_ID + "=" + accountId,
+                    null);
         }
     }
-
 
     /**
      * Get account capabilities column's value for the given account name, account type, and data
