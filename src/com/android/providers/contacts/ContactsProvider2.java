@@ -1512,6 +1512,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
     private AccountResolver mAccountResolver;
     private ContactMover mContactMover;
 
+    private AccountAttributesEvaluator mAccountAttributesEvaluator;
+
     private int mProviderStatus = STATUS_NORMAL;
     private boolean mProviderStatusUpdateNeeded;
     private volatile CountDownLatch mReadAccessLatch;
@@ -1638,8 +1640,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
         mDefaultAccountManager = new DefaultAccountManager(getContext(), mContactsHelper);
         mAccountResolver = new AccountResolver(mContactsHelper, mDefaultAccountManager);
 
-        mDefaultAccountManager = new DefaultAccountManager(getContext(), mContactsHelper);
-        mAccountResolver = new AccountResolver(mContactsHelper, mDefaultAccountManager);
+        mAccountAttributesEvaluator = new AccountAttributesEvaluator(getContext(), mContactsHelper);
         mContactMover = new ContactMover(this, mContactsHelper, mDefaultAccountManager);
 
         if (mContactsHelper.getPhoneAccountHandleMigrationUtils()
@@ -2803,6 +2804,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
                 throw new IllegalArgumentException(
                         "Cannot get account attributes for invalid accounts.");
             }
+
             Long accountAttributes = getAccountAttributes(accountWithDataSet);
             if (accountAttributes == null) {
                 // Account capabilities wasn't initialized. Initialize now.
@@ -2859,7 +2861,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     throw new IllegalArgumentException(
                             "Cannot overwrite account capabilities for invalid accounts.");
                 }
-                setAccountAttributes(accountWithDataSet,
+                updateAccountAttributes(accountWithDataSet,
                         extras.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES));
                 db.setTransactionSuccessful();
             } finally {
@@ -2872,7 +2874,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
     private Long initializeAccountAttributes(AccountWithDataSet accountWithDataSet) {
         mDbHelper.get().setAccountAttributes(accountWithDataSet.getAccountName(),
-                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(), 0L, false);
+                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(),
+                mAccountAttributesEvaluator.evaluate(accountWithDataSet), false);
         return getAccountAttributes(accountWithDataSet);
     }
 
@@ -2881,14 +2884,15 @@ public class ContactsProvider2 extends AbstractContactsProvider
                 accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
     }
 
-    private void setAccountAttributes(AccountWithDataSet accountWithDataSet, long capabilities,
+    private void setAccountAttributesWithOverride(AccountWithDataSet accountWithDataSet,
+            long capabilities,
             boolean isAppOverride) {
         mDbHelper.get().setAccountAttributes(accountWithDataSet.getAccountName(),
                 accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(), capabilities,
                 isAppOverride);
     }
 
-    private void setAccountAttributes(AccountWithDataSet accountWithDataSet,
+    private void updateAccountAttributes(AccountWithDataSet accountWithDataSet,
             long attributes) {
         final long dataOriginMask =
                 Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL
@@ -2917,7 +2921,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
                             + " type.");
         }
 
-        setAccountAttributes(accountWithDataSet, attributes,
+        setAccountAttributesWithOverride(accountWithDataSet, attributes,
                 true);
     }
 
