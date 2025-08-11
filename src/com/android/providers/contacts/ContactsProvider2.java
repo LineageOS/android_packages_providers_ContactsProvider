@@ -1514,6 +1514,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
     private AccountAttributesEvaluator mAccountAttributesEvaluator;
 
+    private AccountAttributesManager mAccountAttributesManager;
+
     private int mProviderStatus = STATUS_NORMAL;
     private boolean mProviderStatusUpdateNeeded;
     private volatile CountDownLatch mReadAccessLatch;
@@ -1641,6 +1643,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
         mAccountResolver = new AccountResolver(mContactsHelper, mDefaultAccountManager);
 
         mAccountAttributesEvaluator = new AccountAttributesEvaluator(getContext(), mContactsHelper);
+        mAccountAttributesManager = new AccountAttributesManager(mContactsHelper,
+                mAccountAttributesEvaluator);
         mContactMover = new ContactMover(this, mContactsHelper, mDefaultAccountManager);
 
         if (mContactsHelper.getPhoneAccountHandleMigrationUtils()
@@ -2797,36 +2801,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     dataSet);
 
             Account[] systemAccounts = AccountManager.get(getContext()).getAccounts();
-            boolean isSystemOrLocalAccount = accountWithDataSet.isLocalAccount()
-                    || accountWithDataSet.inSystemAccounts(systemAccounts);
-            if (!isSystemOrLocalAccount
-                    && !accountWithDataSet.inSimAccounts(mDbHelper.get().getAllSimAccounts())) {
-                throw new IllegalArgumentException(
-                        "Cannot get account attributes for invalid accounts.");
-            }
-
-            Long accountAttributes = getAccountAttributes(accountWithDataSet);
-            if (accountAttributes == null) {
-                // Account capabilities wasn't initialized. Initialize now.
-                final SQLiteDatabase db = mDbHelper.get().getWritableDatabase();
-                db.beginTransaction();
-                try {
-                    // Re-query the fresh SIM account state inside the same transaction with
-                    // account attribute initialization, so that  if the SIM account state
-                    // changed since last call, the account attributes
-                    // initialization is based on an up-to-date SIM account.
-                    if (!isSystemOrLocalAccount && !accountWithDataSet.inSimAccounts(
-                            mDbHelper.get().getAllSimAccounts())) {
-                        throw new IllegalArgumentException(
-                                "Account state changed and is now invalid");
-                    }
-
-                    accountAttributes = initializeAccountAttributes(accountWithDataSet);
-                    db.setTransactionSuccessful();
-                } finally {
-                    db.endTransaction();
-                }
-            }
+            Long accountAttributes = mAccountAttributesManager.getAccountAttributes(
+                    accountWithDataSet, systemAccounts);
 
             if (accountAttributes == null) {
                 Log.e(TAG, "Failed to initialize the account capabilities.");
@@ -2849,81 +2825,14 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     dataSet);
 
             Account[] systemAccounts = AccountManager.get(getContext()).getAccounts();
-            boolean isSystemOrLocalAccount = accountWithDataSet.isLocalAccount()
-                    || accountWithDataSet.inSystemAccounts(systemAccounts);
-
-            final SQLiteDatabase db = mDbHelper.get().getWritableDatabase();
-            db.beginTransaction();
-
-            try {
-                if (!isSystemOrLocalAccount
-                        && !accountWithDataSet.inSimAccounts(mDbHelper.get().getAllSimAccounts())) {
-                    throw new IllegalArgumentException(
-                            "Cannot overwrite account capabilities for invalid accounts.");
-                }
-                updateAccountAttributes(accountWithDataSet,
-                        extras.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES));
-                db.setTransactionSuccessful();
-            } finally {
-                db.endTransaction();
-            }
+            mAccountAttributesManager.updateAccountAttributes(accountWithDataSet,
+                    extras.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES), systemAccounts);
             return new Bundle();
         }
         return null;
     }
 
-    private Long initializeAccountAttributes(AccountWithDataSet accountWithDataSet) {
-        mDbHelper.get().setAccountAttributes(accountWithDataSet.getAccountName(),
-                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(),
-                mAccountAttributesEvaluator.evaluate(accountWithDataSet), false);
-        return getAccountAttributes(accountWithDataSet);
-    }
 
-    private Long getAccountAttributes(AccountWithDataSet accountWithDataSet) {
-        return mDbHelper.get().getAccountAttributes(accountWithDataSet.getAccountName(),
-                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
-    }
-
-    private void setAccountAttributesWithOverride(AccountWithDataSet accountWithDataSet,
-            long capabilities,
-            boolean isAppOverride) {
-        mDbHelper.get().setAccountAttributes(accountWithDataSet.getAccountName(),
-                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(), capabilities,
-                isAppOverride);
-    }
-
-    private void updateAccountAttributes(AccountWithDataSet accountWithDataSet,
-            long attributes) {
-        final long dataOriginMask =
-                Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL
-                        | Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_SIM
-                        | Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD;
-
-        final long syncModeMask =
-                Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC
-                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC;
-
-        final long allDefinedCapabilities =
-                dataOriginMask | syncModeMask
-                        | Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED;
-
-        if ((attributes & ~allDefinedCapabilities) != 0) {
-            throw new IllegalArgumentException("An undefined attribute bit was provided.");
-        }
-
-        // Check for semantic conflicts in the new state:
-        // Check DATA_ORIGIN category: ensure at most one bit is set.
-        // TODO(b/432284382): do we want to also enforce at least one bits is set?
-        final long dataOriginBits = attributes & dataOriginMask;
-        if ((dataOriginBits & (dataOriginBits - 1)) != 0) {
-            throw new IllegalStateException(
-                    "Conflict: The resulting attributes would contain more than one DATA_ORIGIN"
-                            + " type.");
-        }
-
-        setAccountAttributesWithOverride(accountWithDataSet, attributes,
-                true);
-    }
 
     private static LogFields.Builder getCallMethodLogBuilder() {
         return LogFields.Builder.aLogFields()
