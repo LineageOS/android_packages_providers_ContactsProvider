@@ -18,6 +18,7 @@ package com.android.providers.contacts;
 
 import android.accounts.Account;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.SystemClock;
 import android.provider.ContactsContract.Settings.AccountAttributes;
 import android.util.Log;
 
@@ -37,16 +38,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AccountAttributesManager {
     private static final String TAG = "AccountAttributesManager";
+
+
+    /** Rate limit (in milliseconds) for account attributes updating. Do it at most once per day. */
+    private static final long DEFAULT_ACCOUNT_ATTRIBUTES_UPDATE_RATE_LIMIT = 24 * 60 * 60 * 1000;
     private final ContactsDatabaseHelper mDbHelper;
 
+    // In-memory cache of the last update time for account attributes. It's refreshed when the
+    // provider starts up.
     private Map<AccountWithDataSet, Long> mLastAccountAttributeUpdate = new ConcurrentHashMap<>();
 
     private final AccountAttributesEvaluator mAccountAttributesEvaluator;
 
-    private long mAccountAttributeUpdateRateLimit;
-
-    /** Rate limit (in milliseconds) for account attributes updating. Do it at most once per day. */
-    private static final long DEFAULT_ACCOUNT_ATTRIBUTES_UPDATE_RATE_LIMIT = 24 * 60 * 60 * 1000;
+    private long mAccountAttributeUpdateRateLimit = DEFAULT_ACCOUNT_ATTRIBUTES_UPDATE_RATE_LIMIT;
 
 
     /**
@@ -60,7 +64,6 @@ public class AccountAttributesManager {
             AccountAttributesEvaluator accountAttributesEvaluator) {
         this.mDbHelper = dbHelper;
         this.mAccountAttributesEvaluator = accountAttributesEvaluator;
-        setAccountAttributesUpdateRateLimit(DEFAULT_ACCOUNT_ATTRIBUTES_UPDATE_RATE_LIMIT);
     }
 
     /**
@@ -94,10 +97,7 @@ public class AccountAttributesManager {
                     "Cannot get account attributes for invalid accounts.");
         }
 
-        long now = System.currentTimeMillis();
-        long lastUpdate = mLastAccountAttributeUpdate.getOrDefault(accountWithDataSet, 0L);
-        boolean needsUpdate = accountAttributes == null
-                || now > lastUpdate + getAccountAttributesEvaluationRateLimit();
+        boolean needsUpdate = needsAccountAttributesUpdate(accountWithDataSet, accountAttributes);
 
         if (needsUpdate) {
             // Initialize or update the account attributes, subjected to rate limit.
@@ -109,13 +109,7 @@ public class AccountAttributesManager {
             synchronized (this) {
                 // Re-check the condition inside the synchronized block
                 // another thread might have finished the update while we were waiting.
-                lastUpdate = mLastAccountAttributeUpdate.getOrDefault(accountWithDataSet, 0L);
-                accountAttributes = mDbHelper.getAccountAttributes(
-                        accountWithDataSet.getAccountName(), accountWithDataSet.getAccountType(),
-                        accountWithDataSet.getDataSet());
-                // Re-fetch from DB
-                needsUpdate = accountAttributes == null
-                        || now > lastUpdate + getAccountAttributesEvaluationRateLimit();
+                needsUpdate = needsAccountAttributesUpdate(accountWithDataSet, accountAttributes);
 
                 if (needsUpdate) {
                     // Now, it's safe to perform the update.
@@ -136,7 +130,8 @@ public class AccountAttributesManager {
 
                         accountAttributes = initializeAccountAttributes(accountWithDataSet);
                         db.setTransactionSuccessful();
-                        mLastAccountAttributeUpdate.put(accountWithDataSet, now);
+                        mLastAccountAttributeUpdate.put(accountWithDataSet,
+                                SystemClock.elapsedRealtime());
                     } finally {
                         db.endTransaction();
                     }
@@ -144,6 +139,14 @@ public class AccountAttributesManager {
             }
         }
         return accountAttributes;
+    }
+
+    private boolean needsAccountAttributesUpdate(AccountWithDataSet accountWithDataSet,
+            Long accountAttributes) {
+        long now = SystemClock.elapsedRealtime();
+        long lastUpdate = mLastAccountAttributeUpdate.getOrDefault(accountWithDataSet, 0L);
+        return accountAttributes == null
+                || now > lastUpdate + getAccountAttributesEvaluationRateLimit();
     }
 
     private Long initializeAccountAttributes(AccountWithDataSet accountWithDataSet) {

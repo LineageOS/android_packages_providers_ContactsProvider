@@ -102,7 +102,7 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
     }
 
     @Test
-    public void testGetAccountAttributes_attributesExistButStale_reEvaluates() {
+    public void testGetAccountAttributes_attributesExistButStale_reevaluates() {
         // Arrange
         when(mMockEvaluator.evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET)).thenReturn(
                 ATTRIBUTE_DATA_ORIGIN_LOCAL);

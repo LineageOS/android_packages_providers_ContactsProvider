@@ -117,6 +117,8 @@ public class CallLogProvider extends ContentProvider {
             Calls.PHONE_ACCOUNT_HIDDEN, 0);
 
     private static final String CLAUSE_VOIP_LOG = "(" + Calls.UUID + " is NOT NULL)";
+    /** Selection clause to use to exclude voip call records. */
+    private static final String CLAUSE_EXCLUDE_VOIP_CALL = "(" + Calls.UUID + " is NULL)";
 
     private static final String CALL_COMPOSER_PICTURE_DIRECTORY_NAME = "call_composer_pics";
     private static final String CALL_COMPOSER_ALL_USERS_DIRECTORY_NAME = "all_users";
@@ -507,9 +509,13 @@ public class CallLogProvider extends ContentProvider {
 
         final SelectionBuilder selectionBuilder = new SelectionBuilder(selection);
         checkVoicemailPermissionAndAddRestriction(uri, selectionBuilder, true /*isQuery*/);
+
         selectionBuilder.addClause(EXCLUDE_HIDDEN_SELECTION);
 
         final int match = sURIMatcher.match(uri);
+        // Check to see if we should exclude VOIP calls based on the defined parameter. By default,
+        // we will exclude the logs unless CallLog#INCLUDE_VOIP_CALLS_PARAM_KEY is set.
+        maybeAddVoipCallRestriction(uri, selectionBuilder, match);
         switch (match) {
             case CALLS:
                 break;
@@ -1103,6 +1109,15 @@ public class CallLogProvider extends ContentProvider {
      */
     private DatabaseModifier createDatabaseModifier(DatabaseUtils.InsertHelper insertHelper) {
         return new DbModifierWithNotification(Tables.CALLS, insertHelper, getContext());
+    }
+
+    private void maybeAddVoipCallRestriction(Uri uri, SelectionBuilder selectionBuilder,
+            int match) {
+        // Allow calls accessed via the VOIP uri to access the VOIP call logs
+        if (!uri.getBooleanQueryParameter(Calls.INCLUDE_VOIP_CALLS_PARAM_KEY, false)
+                && match != CALLS_VOIP) {
+            selectionBuilder.addClause(CLAUSE_EXCLUDE_VOIP_CALL);
+        }
     }
 
     private static final Integer VOICEMAIL_TYPE = new Integer(Calls.VOICEMAIL_TYPE);

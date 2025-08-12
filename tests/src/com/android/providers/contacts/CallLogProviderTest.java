@@ -750,6 +750,19 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 BACKGROUND_TASK_MIGRATE_PHONE_ACCOUNT_HANDLES, handle);
     }
 
+    // Test to check that the voip call logs are filtered based on the parameter key in the uris
+    public void testFilterVoipContentUris() {
+        // Insert one voip call and two regular call record.
+        insertVoipCallRecord();
+        insertCallRecord();
+        insertCallRecord();
+
+        // With the default uri, only 2 call entries should be returned.
+        // With the voip uri all 3 should be returned.
+        assertEquals(2, getCount(Calls.CONTENT_URI, null, null));
+        assertEquals(3, getCount(Calls.CONTENT_URI_WITH_VOIP_CALLS, null, null));
+    }
+
     private ContentValues getDefaultValues(int callType) {
         ContentValues values = new ContentValues();
         values.put(Calls.TYPE, callType);
@@ -765,12 +778,23 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
         return getDefaultValues(Calls.INCOMING_TYPE);
     }
 
+    private ContentValues getDefaultVoipCallValues() {
+        ContentValues values = getDefaultValues(Calls.OUTGOING_TYPE);
+        values.put(Calls.UUID, "testVoipUuid");
+        values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, "testVoipPkgCmptName");
+        return values;
+    }
+
     private ContentValues getDefaultVoicemailValues() {
         return getDefaultValues(Calls.VOICEMAIL_TYPE);
     }
 
     private Uri insertCallRecord() {
         return mResolver.insert(Calls.CONTENT_URI, getDefaultCallValues());
+    }
+
+    private Uri insertVoipCallRecord() {
+        return mResolver.insert(Calls.CONTENT_URI_WITH_VOIP_CALLS, getDefaultVoipCallValues());
     }
 
     private Uri insertVoicemailRecord() {

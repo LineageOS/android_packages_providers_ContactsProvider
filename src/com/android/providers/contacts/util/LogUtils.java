@@ -91,7 +91,11 @@ public class LogUtils {
                 getLatencyMicros(logFields.getStartNanos()),
                 logFields.getTaskType(),
                 logCallMethod() ? logFields.getMethodCalled() : 0,
-                logFields.getUid());
+                logFields.getUid(),
+                /*accountType=*/"",
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_UNSPECIFIED,
+                /*defaultAccountState*/0
+                );
     }
 
     private static int getCallerType(boolean callerIsSyncAdapter) {
