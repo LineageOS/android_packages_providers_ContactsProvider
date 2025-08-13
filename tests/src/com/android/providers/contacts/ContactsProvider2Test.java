@@ -22,7 +22,6 @@ import static com.android.providers.contacts.TestUtils.dumpCursor;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
-
 import android.accounts.Account;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;

@@ -27,6 +27,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.accounts.AuthenticatorDescription;
 import android.accounts.AuthenticatorException;
 import android.accounts.OnAccountsUpdateListener;
 import android.accounts.OperationCanceledException;
@@ -148,6 +149,11 @@ public class ContactsActor {
         @Override
         public Account[] getAccounts() {
             return mAccounts;
+        }
+
+        @Override
+        public AuthenticatorDescription[] getAuthenticatorTypes() {
+            return new AuthenticatorDescription[0];
         }
 
         @Override

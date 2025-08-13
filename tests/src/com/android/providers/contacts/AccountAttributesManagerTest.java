@@ -20,8 +20,10 @@ import static android.provider.ContactsContract.Settings.AccountAttributes.ATTRI
 import static android.provider.ContactsContract.Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL;
 import static android.provider.ContactsContract.Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_SIM;
 import static android.provider.ContactsContract.Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC;
+import static android.provider.ContactsContract.Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC;
 
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,6 +40,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.concurrent.TimeUnit;
 
 @SmallTest
 @RunWith(JUnit4.class)
@@ -72,6 +76,9 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         mManager = new AccountAttributesManager(mDbHelper, mMockEvaluator);
         mDbHelper.createSimAccountIdInTransaction(SIM_ACCOUNT_WITH_DATA_SET, 1,
                 SimAccount.ADN_EF_TYPE);
+
+        when(mMockEvaluator.evaluate(any())).thenReturn(
+                0L);
     }
 
     @After
@@ -102,7 +109,7 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
     }
 
     @Test
-    public void testGetAccountAttributes_attributesExistButStale_reevaluates() {
+    public void testGetAccountAttributes_attributesExistButStale_reevaluates() throws Exception {
         // Arrange
         when(mMockEvaluator.evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET)).thenReturn(
                 ATTRIBUTE_DATA_ORIGIN_LOCAL);
@@ -114,6 +121,8 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
 
         when(mMockEvaluator.evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET)).thenReturn(
                 ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        TimeUnit.MILLISECONDS.sleep(10);
 
         // Act: Get attributes again. This should now trigger a re-evaluation.
         attributes = mManager.getAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET,
@@ -210,5 +219,105 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
                     ATTRIBUTE_DATA_ORIGIN_CLOUD,
                     new Account[]{SYSTEM_ACCOUNT});
         });
+    }
+
+    private void setAccountAttributeInDb(AccountWithDataSet accountWithDataSet,
+            long accountAttribute) {
+        mDbHelper.setAccountAttributes(accountWithDataSet.getAccountName(),
+                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(),
+                accountAttribute, false);
+    }
+
+    private long getAccountAttributesInDb(AccountWithDataSet accountWithDataSet) {
+        return mDbHelper.getAccountAttributes(accountWithDataSet.getAccountName(),
+                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
+    }
+
+    @Test
+    public void testRefreshAllAccountAttributes_refreshesStaleCloudAccountsAndSkipsRecentOnes()
+            throws Exception {
+        // Arrange:
+        // Account 1 (SYSTEM_ACCOUNT): Will be treated as stale because its attributes are not yet
+        // cached or stored. We must ensure it's known to the DB to be included in the refresh.
+        setAccountAttributeInDb(SYSTEM_ACCOUNT_WITH_DATA_SET, 0L);
+        when(mMockEvaluator.evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET)).thenReturn(
+                ATTRIBUTE_DATA_ORIGIN_CLOUD);
+        // Set a refresh rate limit to a very short one.
+        mManager.setAccountAttributesUpdateRateLimit(0L);
+
+        // Act:
+        TimeUnit.MILLISECONDS.sleep(10);
+        mManager.refreshAllAccountAttributes(new Account[]{SYSTEM_ACCOUNT});
+
+        // Restore the rate limit to a reasonably large one.
+        mManager.setAccountAttributesUpdateRateLimit(100000L);
+
+        // Verify:
+        // Expects the account attributes got reevaluated and return a fresh one.
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET));
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                (long) mManager.getAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET,
+                        new Account[]{SYSTEM_ACCOUNT}));
+        verify(mMockEvaluator, times(1)).evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET);
+
+        // Arrange:
+        when(mMockEvaluator.evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET)).thenReturn(
+                ATTRIBUTE_DATA_ORIGIN_CLOUD | ATTRIBUTE_SYNC_MODE_UP_SYNC);
+
+        // Act:
+        mManager.refreshAllAccountAttributes(new Account[]{SYSTEM_ACCOUNT});
+
+        // Verify:
+        // Expects the account attributes didn't get reevaluated and thus return a stale one.
+        verify(mMockEvaluator, times(1)).evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET);
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET));
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                (long) mManager.getAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET,
+                        new Account[]{SYSTEM_ACCOUNT}));
+    }
+
+    @Test
+    public void testRefreshAllAccountAttributes_refreshesStaleSimAccountsAndSkipsRecentOnes()
+            throws Exception {
+        // Arrange:
+        // Account 1 (SIM_ACCOUNT): Will be treated as stale because its attributes are not yet
+        // cached or stored. We must ensure it's known to the DB to be included in the refresh.
+        setAccountAttributeInDb(SIM_ACCOUNT_WITH_DATA_SET, 0L);
+        when(mMockEvaluator.evaluate(SIM_ACCOUNT_WITH_DATA_SET)).thenReturn(
+                ATTRIBUTE_DATA_ORIGIN_SIM);
+        // Set a refresh rate limit to a very short one.
+        mManager.setAccountAttributesUpdateRateLimit(0L);
+
+        // Act:
+        TimeUnit.MILLISECONDS.sleep(10);
+        mManager.refreshAllAccountAttributes(new Account[0]);
+
+        // Restore the rate limit to a reasonably large one.
+        mManager.setAccountAttributesUpdateRateLimit(100000L);
+
+        // Verify:
+        // Expects the account attributes got reevaluated and return a fresh one.
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
+                getAccountAttributesInDb(SIM_ACCOUNT_WITH_DATA_SET));
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
+                (long) mManager.getAccountAttributes(SIM_ACCOUNT_WITH_DATA_SET, new Account[0]));
+        verify(mMockEvaluator, times(1)).evaluate(SIM_ACCOUNT_WITH_DATA_SET);
+
+        // Arrange:
+        when(mMockEvaluator.evaluate(SIM_ACCOUNT_WITH_DATA_SET)).thenReturn(0L);
+
+        // Act:
+        mManager.refreshAllAccountAttributes(new Account[0]);
+
+        // Verify:
+        // Expects the account attributes didn't get reevaluated and thus return a stale one.
+        verify(mMockEvaluator, times(1)).evaluate(SIM_ACCOUNT_WITH_DATA_SET);
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
+                getAccountAttributesInDb(SIM_ACCOUNT_WITH_DATA_SET));
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
+                (long) mManager.getAccountAttributes(SIM_ACCOUNT_WITH_DATA_SET,
+                        new Account[]{SYSTEM_ACCOUNT}));
     }
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License
  */
-
 package com.android.providers.contacts;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
@@ -24,6 +23,7 @@ import static android.provider.Flags.newAccountAttributesApiEnabled;
 
 import static com.android.providers.contacts.flags.Flags.cp2SyncSearchIndexFlag;
 import static com.android.providers.contacts.flags.Flags.disableCp2AccountMoveFlag;
+import static com.android.providers.contacts.flags.Flags.insertAccountLogging;
 import static com.android.providers.contacts.flags.Flags.logCallMethod;
 import static com.android.providers.contacts.util.PhoneAccountHandleMigrationUtils.TELEPHONY_COMPONENT_NAME;
 
@@ -278,6 +278,8 @@ public class ContactsProvider2 extends AbstractContactsProvider
     private static final int BACKGROUND_TASK_CLEANUP_DANGLING_CONTACTS = 13;
     @VisibleForTesting
     protected static final int BACKGROUND_TASK_MIGRATE_PHONE_ACCOUNT_HANDLES = 14;
+
+    private static final int BACKGROUND_TASK_REFRESH_ACCOUNT_ATTRIBUTES = 15;
 
     protected static final int STATUS_NORMAL = 0;
     protected static final int STATUS_UPGRADING = 1;
@@ -1439,6 +1441,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
     private final TransactionContext mProfileTransactionContext = new TransactionContext(true);
     private final ThreadLocal<TransactionContext> mTransactionContext =
             new ThreadLocal<TransactionContext>();
+    private final ThreadLocal<LogFields.Builder> mLogFieldsBuilderHolder = new ThreadLocal<>();
 
     // Random number generator.
     private final SecureRandom mRandom = new SecureRandom();
@@ -1640,7 +1643,9 @@ public class ContactsProvider2 extends AbstractContactsProvider
         mContactDirectoryManager = new ContactDirectoryManager(this);
         mGlobalSearchSupport = new GlobalSearchSupport(this);
         mDefaultAccountManager = new DefaultAccountManager(getContext(), mContactsHelper);
-        mAccountResolver = new AccountResolver(mContactsHelper, mDefaultAccountManager);
+        AccountManager accountManager = AccountManager.get(getContext());
+        mAccountResolver = new AccountResolver(mContactsHelper, mDefaultAccountManager,
+                accountManager);
 
         mAccountAttributesEvaluator = new AccountAttributesEvaluator(getContext(), mContactsHelper);
         mAccountAttributesManager = new AccountAttributesManager(mContactsHelper,
@@ -1688,6 +1693,10 @@ public class ContactsProvider2 extends AbstractContactsProvider
         scheduleBackgroundTask(BACKGROUND_TASK_CLEANUP_PHOTOS);
         scheduleBackgroundTask(BACKGROUND_TASK_CLEAN_DELETE_LOG);
         scheduleBackgroundTask(BACKGROUND_TASK_CLEANUP_DANGLING_CONTACTS);
+
+        if (newAccountAttributesApiEnabled()) {
+            scheduleBackgroundTask(BACKGROUND_TASK_REFRESH_ACCOUNT_ATTRIBUTES);
+        }
 
         ContactsPackageMonitor.start(getContext());
 
@@ -1935,6 +1944,12 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
                     cleanupDanglingContacts();
                 }
+                break;
+            }
+
+            case BACKGROUND_TASK_REFRESH_ACCOUNT_ATTRIBUTES: {
+                mAccountAttributesManager.refreshAllAccountAttributes(
+                        AccountManager.get(getContext()).getAccounts());
                 break;
             }
         }
@@ -2398,6 +2413,10 @@ public class ContactsProvider2 extends AbstractContactsProvider
                         uri, ContactsContract.CALLER_IS_SYNCADAPTER, false))
                 .setStartNanos(SystemClock.elapsedRealtimeNanos())
                 .setUid(Binder.getCallingUid());
+        if (insertAccountLogging()) {
+            mLogFieldsBuilderHolder.set(logBuilder);
+        }
+
         Uri resultUri = null;
 
         try {
@@ -2426,6 +2445,9 @@ public class ContactsProvider2 extends AbstractContactsProvider
             LogUtils.log(
                     logBuilder.setResultUri(resultUri).setResultCount(resultUri == null ? 0 : 1)
                             .build());
+            if (insertAccountLogging()) {
+                mLogFieldsBuilderHolder.remove();
+            }
         }
     }
 
@@ -3863,9 +3885,18 @@ public class ContactsProvider2 extends AbstractContactsProvider
     }
 
     private Uri insertSettings(Uri uri, ContentValues values) {
-        final AccountWithDataSet account = mAccountResolver.resolveAccountWithDataSet(uri, values,
-                /*applyDefaultAccount=*/false, /*shouldValidateAccountForContactAddition=*/ false,
-                false);
+        final AccountWithDataSet account;
+        if (insertAccountLogging()) {
+            InsertAccountValidator.ValidationResultWithDetails validationResult =
+                    mAccountResolver.getAccountValidationResultForContactAddition(uri, values,
+                            false);
+            account = mAccountResolver.resolveAccountWithDataSet(validationResult, false, false);
+        } else {
+            account = mAccountResolver.resolveAccountWithDataSet(uri, values,
+                    /*applyDefaultAccount=*/false, /*shouldValidateAccountForContactAddition=*/
+                    false,
+                    false);
+        }
 
         // Note that the following check means the local account settings cannot be created with
         // an insert because resolveAccountWithDataSet returns null for it. However, the settings
@@ -5062,12 +5093,23 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
                 if (isAccountChanging) {
                     if (newDefaultAccountApiEnabled() && isAccountRestrictionEnabled()) {
-                        mAccountResolver.validateAccountForContactAddition(updatedAccountName,
-                                updatedAccountType,
-                                CompatChanges.isChangeEnabled(
-                                        ChangeIds.RESTRICT_CONTACTS_CREATION_IN_ACCOUNTS,
-                                        Binder.getCallingUid()),
-                                isAppAllowedToSyncSimContacts());
+                        if (insertAccountLogging()) {
+                            InsertAccountValidator.ValidationResultWithDetails validationResult =
+                                    mAccountResolver.getAccountValidationResultForContactAddition(
+                                            updatedAccountName, updatedAccountType, null,
+                                            isAppAllowedToSyncSimContacts());
+                            mAccountResolver.requireValidAccount(validationResult,
+                                    CompatChanges.isChangeEnabled(
+                                            ChangeIds.RESTRICT_CONTACTS_CREATION_IN_ACCOUNTS,
+                                            Binder.getCallingUid()));
+                        } else {
+                            mAccountResolver.validateAccountForContactAddition(updatedAccountName,
+                                    updatedAccountType,
+                                    CompatChanges.isChangeEnabled(
+                                            ChangeIds.RESTRICT_CONTACTS_CREATION_IN_ACCOUNTS,
+                                            Binder.getCallingUid()),
+                                    isAppAllowedToSyncSimContacts());
+                        }
                     }
 
                     final long accountId = dbHelper.getOrCreateAccountIdInTransaction(
@@ -10702,9 +10744,26 @@ public class ContactsProvider2 extends AbstractContactsProvider
                         ChangeIds.RESTRICT_CONTACTS_CREATION_IN_ACCOUNTS,
                         Binder.getCallingUid());
 
-        final AccountWithDataSet account = mAccountResolver.resolveAccountWithDataSet(uri, values,
-                applyDefaultAccount, shouldValidateAccountForContactAddition,
-                isAppAllowedToSyncSimContacts());
+        final AccountWithDataSet account;
+        if (insertAccountLogging()) {
+            InsertAccountValidator.ValidationResultWithDetails validationResult =
+                    mAccountResolver.getAccountValidationResultForContactAddition(uri, values,
+                            isAppAllowedToSyncSimContacts());
+            LogFields.Builder logBuilder = mLogFieldsBuilderHolder.get();
+            if (logBuilder != null) {
+                logBuilder.setAccountType(validationResult.getRequestedAccountType())
+                        .setDefaultAccountState(validationResult.getDefaultAccountState())
+                        .setSystemAccount(validationResult.isSystemAccount())
+                        .setLocalAccount(validationResult.isLocalAccount())
+                        .setSimAccount(validationResult.getMatchingSimAccount());
+            }
+            account = mAccountResolver.resolveAccountWithDataSet(validationResult,
+                    applyDefaultAccount, shouldValidateAccountForContactAddition);
+        } else {
+            account = mAccountResolver.resolveAccountWithDataSet(uri, values,
+                    applyDefaultAccount, shouldValidateAccountForContactAddition,
+                    isAppAllowedToSyncSimContacts());
+        }
         final long id = mDbHelper.get().getOrCreateAccountIdInTransaction(account);
         values.put(RawContactsColumns.ACCOUNT_ID, id);
 

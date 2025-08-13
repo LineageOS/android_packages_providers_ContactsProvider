@@ -17,11 +17,10 @@
 package com.android.providers.contacts.util;
 
 import static com.android.providers.contacts.flags.Flags.logCallMethod;
-import static com.android.providers.contacts.flags.Flags.logContactSaveInvalidAccountError;
 
 import android.os.SystemClock;
 
-import com.android.providers.contacts.AccountResolver;
+import com.google.common.annotations.VisibleForTesting;
 
 public class LogUtils {
 
@@ -80,45 +79,44 @@ public class LogUtils {
                 ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__CALLER_TYPE__CALLER_IS_NOT_SYNC_ADAPTER;
     }
 
+    public interface AccountDataOrigin {
+        int UNSPECIFIED =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_UNSPECIFIED;
+        int LOCAL =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_LOCAL;
+        int CLOUD =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_CLOUD;
+        int SIM_ADN =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_SIM_ADN;
+        int SIM_FDN =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_SIM_FDN;
+        int SIM_SDN =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_SIM_SDN;
+    }
+
+    private static ContactsProviderStatsLog sLogWriter = new ContactsProviderStatsLog();
+
+    @VisibleForTesting
+    public static void setContactsProviderStatsLogForTesting(ContactsProviderStatsLog logWriter) {
+        sLogWriter = logWriter;
+    }
+
     public static void log(LogFields logFields) {
-        ContactsProviderStatsLog.write(
+        sLogWriter.write(
                 ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED,
                 logFields.getApiType(),
                 logFields.getUriType(),
-                getCallerType(logFields.isCallerIsSyncAdapter()),
-                getResultType(logFields.getException()),
+                logFields.getCallerType(),
+                logFields.getResultType(),
                 logFields.getResultCount(),
                 getLatencyMicros(logFields.getStartNanos()),
                 logFields.getTaskType(),
                 logCallMethod() ? logFields.getMethodCalled() : 0,
                 logFields.getUid(),
-                /*accountType=*/"",
-                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_UNSPECIFIED,
-                /*defaultAccountState*/0
-                );
-    }
-
-    private static int getCallerType(boolean callerIsSyncAdapter) {
-        return callerIsSyncAdapter
-                ? CallerType.CALLER_IS_SYNC_ADAPTER : CallerType.CALLER_IS_NOT_SYNC_ADAPTER;
-    }
-
-
-    private static int getResultType(Exception exception) {
-        if (exception == null) {
-            return ResultType.SUCCESS;
-        } else if (exception instanceof IllegalArgumentException) {
-            if (logContactSaveInvalidAccountError()
-                    && AccountResolver.UNABLE_TO_WRITE_TO_LOCAL_OR_SIM_EXCEPTION_MESSAGE.equals(
-                    exception.getMessage())) {
-                return ResultType.INVALID_ACCOUNT;
-            }
-            return ResultType.ILLEGAL_ARGUMENT;
-        } else if (exception instanceof UnsupportedOperationException) {
-            return ResultType.UNSUPPORTED_OPERATION;
-        } else {
-            return ResultType.FAIL;
-        }
+                logFields.getAccountType(),
+                logFields.getAccountDataOrigin(),
+                logFields.getDefaultAccountState()
+        );
     }
 
     private static long getLatencyMicros(long startNanos) {

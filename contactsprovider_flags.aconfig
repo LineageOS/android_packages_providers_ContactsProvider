@@ -61,3 +61,9 @@ flag {
        purpose: PURPOSE_BUGFIX
    }
 }
+flag {
+   name: "insert_account_logging"
+   namespace: "contacts"
+   description: "Enables logging of account metadata for raw contact and group inserts"
+   bug: "427735757"
+}

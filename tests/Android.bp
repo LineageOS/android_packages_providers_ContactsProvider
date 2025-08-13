@@ -18,6 +18,8 @@ android_test {
         "contactsprovider_flags_java_lib",
         "platform-compat-test-rules",
         "telecom-util-lib",
+        "StatsdTestUtils",
+        "statsdprotolite",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -52,6 +54,10 @@ test_module_config {
             name: "feature-flags:flag-value",
             value: "contacts/android.provider.new_default_account_api_enabled=true",
         },
+        {
+            name: "feature-flags:flag-value",
+            value: "contacts/com.android.providers.contacts.flags.insert_account_logging=true",
+        },
     ],
 }
 
@@ -70,6 +76,10 @@ test_module_config {
         {
             name: "feature-flags:flag-value",
             value: "contacts/android.provider.new_default_account_api_enabled=false",
+        },
+        {
+            name: "feature-flags:flag-value",
+            value: "contacts/com.android.providers.contacts.flags.insert_account_logging=false",
         },
     ],
 }

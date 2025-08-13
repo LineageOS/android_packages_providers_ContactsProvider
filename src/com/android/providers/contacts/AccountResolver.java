@@ -16,6 +16,7 @@
 package com.android.providers.contacts;
 
 import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.ContentValues;
 import android.net.Uri;
 import android.provider.ContactsContract.RawContacts;
@@ -23,6 +24,8 @@ import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccou
 import android.provider.ContactsContract.SimAccount;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.android.providers.contacts.InsertAccountValidator.ValidationResultWithDetails;
 
 import java.util.List;
 
@@ -33,11 +36,13 @@ public class AccountResolver {
 
     private final ContactsDatabaseHelper mDbHelper;
     private final DefaultAccountManager mDefaultAccountManager;
+    private final AccountManager mAccountManager;
 
     public AccountResolver(ContactsDatabaseHelper dbHelper,
-            DefaultAccountManager defaultAccountManager) {
+            DefaultAccountManager defaultAccountManager, AccountManager accountManager) {
         mDbHelper = dbHelper;
         mDefaultAccountManager = defaultAccountManager;
+        mAccountManager = accountManager;
     }
 
     private static Account getLocalAccount() {
@@ -69,8 +74,7 @@ public class AccountResolver {
             boolean applyDefaultAccount, boolean shouldValidateAccountForContactAddition,
             boolean allowSimWriteOnCloudDcaBypassEnabled) {
         final Account[] accounts = resolveAccount(uri, values);
-        final Account account = applyDefaultAccount
-                ? getAccountWithDefaultAccountApplied(accounts,
+        final Account account = applyDefaultAccount ? getAccountWithDefaultAccountApplied(accounts,
                 shouldValidateAccountForContactAddition, allowSimWriteOnCloudDcaBypassEnabled)
                 : getFirstAccountOrNull(accounts);
 
@@ -89,6 +93,128 @@ public class AccountResolver {
     }
 
     /**
+     * Resolves the account to use for a contact (or group) creation operation based on the provided
+     * validationResult.
+     *
+     * @param validationResult                        The result of validating the account
+     *                                                specified
+     *                                                for the operation.
+     *                                                See
+     *                                                {@link
+     *
+     *
+     *
+     *
+     *                                            #getAccountValidationResultForContactAddition(Uri,
+     *                                                ContentValues, boolean)}
+     * @param applyDefaultAccount                     Whether to use the default account if no
+     *                                                account was specified.
+     * @param shouldValidateAccountForContactAddition Whether to validate the account accepts new
+     *                                                contacts.
+     * @throws IllegalArgumentException if the validation result indicates a failure and the failure
+     *                                  is enforced.
+     */
+    public AccountWithDataSet resolveAccountWithDataSet(
+            ValidationResultWithDetails validationResult, boolean applyDefaultAccount,
+            boolean shouldValidateAccountForContactAddition) {
+        return switch (validationResult.getValidationResult()) {
+            case PASS -> {
+                AccountWithDataSet account = validationResult.getRequestedAccount();
+                if (account != null && account.isLocalAccount()) {
+                    // This is a little confusing but the existing ContactProvider2 logic
+                    // represents the
+                    // local account with a null value until the last step and then converts it to
+                    // AccountWithDataSet.LOCAL. It should be equivalent to convert to
+                    // AccountWithDataSet.LOCAL eagerly but for now we'll do it this way.
+                    yield null;
+                } else {
+                    yield account;
+                }
+            }
+            case ACCOUNT_NOT_SPECIFIED -> {
+                int defaultAccountState = validationResult.getDefaultAccountAndState().getState();
+
+                if (!applyDefaultAccount || defaultAccountState
+                        == DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET
+                        || defaultAccountState
+                        == DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL) {
+                    // See comment in above PASS case; null means use the local account in
+                    // ContactsProvider2.
+                    yield null;
+                } else {
+                    yield AccountWithDataSet.get(
+                            validationResult.getDefaultAccountAndState().getAccount(), null);
+                }
+            }
+            case FAILURE_INVALID_ACCOUNT_ARGS -> throw new IllegalArgumentException(
+                    mDbHelper.exceptionMessage(
+                            "Must specify both or neither of ACCOUNT_NAME and ACCOUNT_TYPE",
+                            validationResult.getUri()));
+            case FAILURE_ACCOUNT_NOT_MATCHING -> throw new IllegalArgumentException(
+                    mDbHelper.exceptionMessage(
+                            "When both specified, ACCOUNT_NAME and ACCOUNT_TYPE must match",
+                            validationResult.getUri()));
+            case FAILURE_DEFAULT_ACCOUNT_CLOUD_RESTRICTION -> {
+                AccountWithDataSet account = validationResult.getRequestedAccount();
+                if (shouldValidateAccountForContactAddition) {
+                    throw new IllegalArgumentException(
+                            UNABLE_TO_WRITE_TO_LOCAL_OR_SIM_EXCEPTION_MESSAGE);
+                } else if (account != null && account.isLocalAccount()) {
+                    yield null;
+                } else {
+                    yield account;
+                }
+            }
+            // Note: not enforcing account existence yet.
+            case FAILURE_ACCOUNT_NOT_FOUND -> validationResult.getRequestedAccount();
+        };
+    }
+
+    /**
+     * Checks that the provided validationResult is valid and throws an appropriate exception if
+     * needed.
+     */
+    public void requireValidAccount(ValidationResultWithDetails validationResult,
+            boolean shouldValidateAccountForContactAddition) {
+        // Attempting to resolve the account that was specified will throw if it was invalid.
+        AccountWithDataSet unused = resolveAccountWithDataSet(validationResult,
+                /** applyDefaultAccount=*/false, shouldValidateAccountForContactAddition);
+    }
+
+    /**
+     * Checks that the account specified by the provided Uri and values is valid for creating
+     * contacts.
+     *
+     * @return the validation result which indicates whether the account is valid and details
+     * about the account validity.
+     */
+    public ValidationResultWithDetails getAccountValidationResultForContactAddition(Uri uri,
+            ContentValues values, boolean allowSimWriteOnCloudDcaBypassEnabled) {
+        InsertAccountValidator validator = new InsertAccountValidator(
+                mDefaultAccountManager.pullDefaultAccount(), mDbHelper.getAllSimAccounts(),
+                mAccountManager.getAccounts());
+        validator.setAllowSimWriteOnCloudDcaBypassEnabled(allowSimWriteOnCloudDcaBypassEnabled);
+        return validator.getValidationResult(uri, values);
+    }
+
+    /**
+     * Checks that the account is valid for creating contacts.
+     *
+     * @return the validation result which indicates whether the account is valid and details
+     * about the account validity.
+     */
+    public ValidationResultWithDetails getAccountValidationResultForContactAddition(
+            String accountName, String accountType, String dataSet,
+            boolean allowSimWriteOnCloudDcaBypassEnabled) {
+        InsertAccountValidator validator = new InsertAccountValidator(
+                mDefaultAccountManager.pullDefaultAccount(), mDbHelper.getAllSimAccounts(),
+                mAccountManager.getAccounts());
+        validator.setAllowSimWriteOnCloudDcaBypassEnabled(allowSimWriteOnCloudDcaBypassEnabled);
+        return validator.getValidationResult(accountName, accountType, dataSet);
+    }
+
+
+    /**
      * Resolves the account to be used, taking into consideration the default account settings.
      *
      * @param accounts 1-size array which contains specified account, or empty array if account is
@@ -99,8 +225,7 @@ public class AccountResolver {
      */
     private Account getAccountWithDefaultAccountApplied(Account[] accounts,
             boolean shouldValidateAccountForContactAddition,
-            boolean allowSimWriteOnCloudDcaBypassEnabled)
-            throws IllegalArgumentException {
+            boolean allowSimWriteOnCloudDcaBypassEnabled) throws IllegalArgumentException {
         if (accounts.length == 0) {
             DefaultAccountAndState defaultAccountAndState =
                     mDefaultAccountManager.pullDefaultAccount();
@@ -114,8 +239,7 @@ public class AccountResolver {
             }
         } else {
             validateAccountForContactAdditionInternal(accounts[0],
-                        shouldValidateAccountForContactAddition,
-                        allowSimWriteOnCloudDcaBypassEnabled);
+                    shouldValidateAccountForContactAddition, allowSimWriteOnCloudDcaBypassEnabled);
             return accounts[0];
         }
     }
@@ -151,33 +275,29 @@ public class AccountResolver {
 
         if (TextUtils.isEmpty(accountName)) {
             validateAccountForContactAdditionInternal(/*account=*/null,
-                    shouldValidateAccountForContactAddition,
-                    allowSimWriteOnCloudDcaBypassEnabled);
+                    shouldValidateAccountForContactAddition, allowSimWriteOnCloudDcaBypassEnabled);
         } else {
             validateAccountForContactAdditionInternal(new Account(accountName, accountType),
-                    shouldValidateAccountForContactAddition,
-                    allowSimWriteOnCloudDcaBypassEnabled);
+                    shouldValidateAccountForContactAddition, allowSimWriteOnCloudDcaBypassEnabled);
         }
     }
 
+
     private void validateAccountForContactAdditionInternal(Account account,
             boolean enforceCloudDefaultAccountRestriction,
-            boolean allowSimWriteOnCloudDcaBypassEnabled)
-            throws IllegalArgumentException {
+            boolean allowSimWriteOnCloudDcaBypassEnabled) throws IllegalArgumentException {
         DefaultAccountAndState defaultAccount = mDefaultAccountManager.pullDefaultAccount();
 
         if (defaultAccount.getState() == DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD) {
-            if (allowSimWriteOnCloudDcaBypassEnabled
-                    ? isDeviceAccount(account)
+            if (allowSimWriteOnCloudDcaBypassEnabled ? isDeviceAccount(account)
                     : isDeviceOrSimAccount(account)) {
                 if (enforceCloudDefaultAccountRestriction) {
                     throw new IllegalArgumentException(
                             UNABLE_TO_WRITE_TO_LOCAL_OR_SIM_EXCEPTION_MESSAGE);
                 } else {
-                    Log.w(TAG,
-                            "Cloud default account: Local/SIM contact creation allowed (target "
-                                    + "SDK <36), but restricted in target SDK 36+. Avoid "
-                                    + "local/SIM writes in target SDK 36+.");
+                    Log.w(TAG, "Cloud default account: Local/SIM contact creation allowed (target "
+                            + "SDK <36), but restricted in target SDK 36+. Avoid "
+                            + "local/SIM writes in target SDK 36+.");
                 }
             }
         }
@@ -195,18 +315,16 @@ public class AccountResolver {
 
 
     private boolean isDeviceOrSimAccount(Account account) {
-        AccountWithDataSet accountWithDataSet = account == null
-                ? new AccountWithDataSet(null, null, null)
-                : new AccountWithDataSet(account.name, account.type, null);
+        AccountWithDataSet accountWithDataSet = account == null ? new AccountWithDataSet(null, null,
+                null) : new AccountWithDataSet(account.name, account.type, null);
 
         List<SimAccount> simAccounts = mDbHelper.getAllSimAccounts();
         return accountWithDataSet.isLocalAccount() || accountWithDataSet.inSimAccounts(simAccounts);
     }
 
     private boolean isDeviceAccount(Account account) {
-        AccountWithDataSet accountWithDataSet = account == null
-                ? new AccountWithDataSet(null, null, null)
-                : new AccountWithDataSet(account.name, account.type, null);
+        AccountWithDataSet accountWithDataSet = account == null ? new AccountWithDataSet(null, null,
+                null) : new AccountWithDataSet(account.name, account.type, null);
 
         return accountWithDataSet.isLocalAccount();
     }
@@ -235,9 +353,8 @@ public class AccountResolver {
         String accountType = ContactsProvider2.getQueryParameter(uri, RawContacts.ACCOUNT_TYPE);
         final boolean partialUri = TextUtils.isEmpty(accountName) ^ TextUtils.isEmpty(accountType);
 
-        if (accountName == null && accountType == null
-                && !values.containsKey(RawContacts.ACCOUNT_NAME)
-                && !values.containsKey(RawContacts.ACCOUNT_TYPE)) {
+        if (accountName == null && accountType == null && !values.containsKey(
+                RawContacts.ACCOUNT_NAME) && !values.containsKey(RawContacts.ACCOUNT_TYPE)) {
             // Account is not specified.
             return new Account[0];
         }
@@ -245,8 +362,8 @@ public class AccountResolver {
         String valueAccountName = values.getAsString(RawContacts.ACCOUNT_NAME);
         String valueAccountType = values.getAsString(RawContacts.ACCOUNT_TYPE);
 
-        final boolean partialValues = TextUtils.isEmpty(valueAccountName)
-                ^ TextUtils.isEmpty(valueAccountType);
+        final boolean partialValues = TextUtils.isEmpty(valueAccountName) ^ TextUtils.isEmpty(
+                valueAccountType);
 
         if (partialUri || partialValues) {
             // Throw when either account is incomplete.

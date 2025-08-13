@@ -75,6 +75,7 @@ genrule {
     name: "statslog-contactsprovider-java-gen",
     tools: ["stats-log-api-gen"],
     cmd: "$(location stats-log-api-gen) --java $(out) --module contactsprovider " +
-        "--javaPackage com.android.providers.contacts.util --javaClass ContactsProviderStatsLog",
+        "--javaPackage com.android.providers.contacts.util --javaClass ContactsProviderStatsLog " +
+        "--nonStatic",
     out: ["com/android/providers/contacts/util/ContactsProviderStatsLog.java"],
 }
