@@ -23,6 +23,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
 import android.accounts.Account;
+import android.accounts.AuthenticatorDescription;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentProviderOperation;
@@ -75,6 +76,7 @@ import android.provider.ContactsContract.RawContacts;
 import android.provider.ContactsContract.RawContactsEntity;
 import android.provider.ContactsContract.SearchSnippets;
 import android.provider.ContactsContract.Settings;
+import android.provider.ContactsContract.Settings.AccountAttributes;
 import android.provider.ContactsContract.StatusUpdates;
 import android.provider.ContactsContract.StreamItemPhotos;
 import android.provider.ContactsContract.StreamItems;
@@ -9873,50 +9875,96 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
 
         Assert.assertThrows(UnsupportedOperationException.class,
                 () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
-                        Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD, 0L));
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD, 0L));
         Assert.assertThrows(UnsupportedOperationException.class,
                 () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
-                        Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
-                        Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL));
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED)
+    public void testAccountAttributesSetByNonAuthenticators() {
+        mActor.setAccounts(new Account[]{mAccount});
+
+        // Unknown package is the authenticator of mAccount.type.
+        mActor.setAuthenticators(new AuthenticatorDescription[]{
+                new AuthenticatorDescription(mAccount.type,
+                        "unknown.package",
+                        0, 0, 0, 0)});
+
+        // Query is OKay.
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Setting account attributes should fail with SecurityException.
+        Assert.assertThrows(
+                SecurityException.class, () ->
+                        updateAccountAttributes(mAccount.name, mAccount.type, null,
+                                0L, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
+
+        // Account attributes is unchanged
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // No authenticators.
+        mActor.setAuthenticators(new AuthenticatorDescription[0]);
+
+        // Query is OKay.
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Setting account attributes should fail with SecurityException.
+        Assert.assertThrows(
+                SecurityException.class, () ->
+                        updateAccountAttributes(mAccount.name, mAccount.type, null,
+                                0L, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
     }
 
     @Test
     @RequiresFlagsEnabled(android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED)
     public void testAccountAttributesSetAndQuery() {
         mActor.setAccounts(new Account[]{mAccount});
+        mActor.setAuthenticators(new AuthenticatorDescription[]{
+                new AuthenticatorDescription(mAccount.type,
+                        mContext.getPackageName(),
+                        0, 0, 0, 0)});
 
-        // Initially, account category should be UNKNOWN
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
-                0L);
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
 
         updateAccountAttributes(mAccount.name, mAccount.type, null,
-                0L, Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+                0L, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
 
         // Update to CAPABILITY_DATA_TYPE_CUSTOM_DECLARED and CAPABILITY_SYNC_MODE_DOWNLOAD_ONLY
         updateAccountAttributes(mAccount.name, mAccount.type, null,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
+                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
 
         // Update attributes to the same value as before
         updateAccountAttributes(mAccount.name, mAccount.type, null,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
+                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
 
         // Clear all attributes.
         updateAccountAttributes(mAccount.name, mAccount.type, null,
-                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
+                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
                 0L);
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null, 0L);
     }

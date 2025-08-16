@@ -94,6 +94,24 @@ public class LogUtils {
                 ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_DATA_ORIGIN__ACCOUNT_DATA_ORIGIN_SIM_SDN;
     }
 
+    public interface CallerAccountTypeOwnership {
+        int UNSPECIFIED =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__CALLER_ACCOUNT_TYPE_OWNERSHIP__CALLER_ACCOUNT_TYPE_OWNERSHIP_UNSPECIFIED;
+        int OWNED =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__CALLER_ACCOUNT_TYPE_OWNERSHIP__CALLER_ACCOUNT_TYPE_OWNERSHIP_OWNED;
+        int NOT_OWNED =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__CALLER_ACCOUNT_TYPE_OWNERSHIP__CALLER_ACCOUNT_TYPE_OWNERSHIP_NOT_OWNED;
+    }
+
+    public interface AccountSyncMode {
+        int UNSPECIFIED =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_SYNC_MODE__ACCOUNT_SYNC_MODE_UNSPECIFIED;
+        int DOWN_ONLY =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_SYNC_MODE__ACCOUNT_SYNC_MODE_DOWN_ONLY;
+        int BIDIRECTIONAL =
+                ContactsProviderStatsLog.CONTACTS_PROVIDER_STATUS_REPORTED__ACCOUNT_SYNC_MODE__ACCOUNT_SYNC_MODE_BIDIRECTIONAL;
+    }
+
     private static ContactsProviderStatsLog sLogWriter = new ContactsProviderStatsLog();
 
     @VisibleForTesting
@@ -115,8 +133,9 @@ public class LogUtils {
                 logFields.getUid(),
                 logFields.getAccountType(),
                 logFields.getAccountDataOrigin(),
-                logFields.getDefaultAccountState()
-        );
+                logFields.getDefaultAccountState(),
+                logFields.getCallerAccountTypeOwnership(),
+                logFields.getAccountSyncMode());
     }
 
     private static long getLatencyMicros(long startNanos) {

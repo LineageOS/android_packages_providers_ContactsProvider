@@ -18,7 +18,9 @@ package com.android.providers.contacts;
 
 import android.Manifest;
 import android.accounts.Account;
+import android.accounts.AuthenticatorDescription;
 import android.content.ContentValues;
+import android.content.SyncAdapterType;
 import android.net.Uri;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -28,8 +30,11 @@ import android.provider.ContactsContract;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.os.AtomsProto;
+import com.android.os.AtomsProto.ContactsProviderStatusReported.AccountSyncMode;
+import com.android.os.AtomsProto.ContactsProviderStatusReported.CallerAccountTypeOwnership;
 import com.android.providers.contacts.flags.Flags;
 import com.android.providers.contacts.testutil.RawContactUtil;
 import com.android.providers.contacts.util.LogUtils;
@@ -124,8 +129,7 @@ public class ContactsProvider2LoggingTest extends BaseContactsProvider2Test {
     public void testInsertRawContact_logsEventWithDcaState() {
         mActor.setAccounts(new Account[]{mAccount});
         ContactsContract.RawContacts.DefaultAccount.setDefaultAccountForNewContacts(mResolver,
-                DefaultAccountAndState.ofCloud(mAccount)
-        );
+                DefaultAccountAndState.ofCloud(mAccount));
 
         long unused = RawContactUtil.createRawContactWithName(mResolver);
 
@@ -136,5 +140,52 @@ public class ContactsProvider2LoggingTest extends BaseContactsProvider2Test {
         AtomsProto.ContactsProviderStatusReported event = loggedRawContactInsertEvents.getFirst();
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
                 event.getDefaultAccountState());
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_INSERT_ACCOUNT_LOGGING})
+    public void testInsertRawContact_logsEventWithAccountOwnershipAndSyncMode() {
+        mActor.setAccounts(new Account[]{mAccount});
+        getContactsProvider().setSyncAdapterTypesForTest(new SyncAdapterType[]{
+                new SyncAdapterType(ContactsContract.AUTHORITY, mAccount.type, false, true)});
+        // Since there are no authenticators the account will be NOT_OWNED.
+        mActor.setAuthenticators(new AuthenticatorDescription[0]);
+
+        RawContactUtil.createRawContactWithName(mResolver, mAccount);
+
+        List<AtomsProto.ContactsProviderStatusReported> loggedRawContactInsertEvents =
+                mContactsProviderStatsLog.getLoggedEvents(
+                        RecordingContactsProviderStatsLog::isRawContactInsertEvent);
+        assertEquals(1, loggedRawContactInsertEvents.size());
+        AtomsProto.ContactsProviderStatusReported event = loggedRawContactInsertEvents.getFirst();
+        assertEquals(
+                CallerAccountTypeOwnership.CALLER_ACCOUNT_TYPE_OWNERSHIP_NOT_OWNED,
+                event.getCallerAccountTypeOwnership());
+        assertEquals(
+                AccountSyncMode.ACCOUNT_SYNC_MODE_BIDIRECTIONAL,
+                event.getAccountSyncMode());
+    }
+
+    @Test
+    @RequiresFlagsDisabled({Flags.FLAG_INSERT_ACCOUNT_LOGGING})
+    public void testInsertRawContact_insertAccountLoggingDisabled_logsEventWithoutAccountOwnershipAndSyncMode() {
+        mActor.setAccounts(new Account[]{mAccount});
+        mActor.setAuthenticators(new AuthenticatorDescription[]{
+                new AuthenticatorDescription(mAccount.type,
+                        InstrumentationRegistry.getInstrumentation().getContext().getPackageName(),
+                        0, 0, 0, 0)});
+        getContactsProvider().setSyncAdapterTypesForTest(new SyncAdapterType[]{
+                new SyncAdapterType(ContactsContract.AUTHORITY, mAccount.type, false, true)});
+
+        RawContactUtil.createRawContactWithName(mResolver, mAccount);
+
+        List<AtomsProto.ContactsProviderStatusReported> loggedRawContactInsertEvents =
+                mContactsProviderStatsLog.getLoggedEvents(
+                        RecordingContactsProviderStatsLog::isRawContactInsertEvent);
+        assertEquals(1, loggedRawContactInsertEvents.size());
+        AtomsProto.ContactsProviderStatusReported event = loggedRawContactInsertEvents.getFirst();
+        assertEquals(CallerAccountTypeOwnership.CALLER_ACCOUNT_TYPE_OWNERSHIP_UNSPECIFIED,
+                event.getCallerAccountTypeOwnership());
+        assertEquals(AccountSyncMode.ACCOUNT_SYNC_MODE_UNSPECIFIED, event.getAccountSyncMode());
     }
 }

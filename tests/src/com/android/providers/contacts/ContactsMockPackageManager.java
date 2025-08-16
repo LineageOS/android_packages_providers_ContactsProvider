@@ -119,6 +119,11 @@ public class ContactsMockPackageManager extends MockPackageManager {
     }
 
     @Override
+    public List<ResolveInfo> queryIntentServices(Intent intent, int flags) {
+        return new ArrayList<ResolveInfo>();
+    }
+
+    @Override
     public Resources getResourcesForApplication(String appPackageName) {
         if (mRealContext.getPackageName().equals(appPackageName)) {
             return mRealContext.getResources();

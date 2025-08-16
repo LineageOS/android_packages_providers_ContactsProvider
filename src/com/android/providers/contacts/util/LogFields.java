@@ -18,14 +18,23 @@ package com.android.providers.contacts.util;
 
 import static com.android.providers.contacts.flags.Flags.logContactSaveInvalidAccountError;
 
+import android.accounts.AuthenticatorDescription;
+import android.content.SyncAdapterType;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.util.Log;
 
 import com.android.providers.contacts.AccountResolver;
+import com.android.providers.contacts.util.LogUtils.AccountSyncMode;
+import com.android.providers.contacts.util.LogUtils.CallerAccountTypeOwnership;
 
 import com.google.common.base.Strings;
 
+import java.util.Objects;
+
 public final class LogFields {
+    private static final String TAG = "Cp2LogFields";
 
     private final int mApiType;
 
@@ -53,10 +62,15 @@ public final class LogFields {
 
     private final int mDefaultAccountState;
 
+    private final int mCallerAccountTypeOwnership;
+
+    private final int mAccountSyncMode;
+
 
     public LogFields(int apiType, int uriType, int taskType, int callerType, long startNanos,
             int resultType, Uri resultUri, int resultCount, int methodCalled, int uid,
-            String accountType, int accountDataOrigin, int defaultAccountState) {
+            String accountType, int accountDataOrigin, int defaultAccountState,
+            int callerAccountTypeOwnership, int accountSyncMode) {
         mApiType = apiType;
         mUriType = uriType;
         mTaskType = taskType;
@@ -70,6 +84,8 @@ public final class LogFields {
         mAccountType = accountType;
         mAccountDataOrigin = accountDataOrigin;
         mDefaultAccountState = defaultAccountState;
+        mCallerAccountTypeOwnership = callerAccountTypeOwnership;
+        mAccountSyncMode = accountSyncMode;
     }
 
     public int getApiType() {
@@ -124,6 +140,15 @@ public final class LogFields {
         return mDefaultAccountState;
     }
 
+    public int getCallerAccountTypeOwnership() {
+        return mCallerAccountTypeOwnership;
+    }
+
+    public int getAccountSyncMode() {
+        return mAccountSyncMode;
+    }
+
+
     public static final class Builder {
         private int mApiType;
         private int mUriType;
@@ -140,6 +165,8 @@ public final class LogFields {
         private boolean mIsLocalAccount;
         private ContactsContract.SimAccount mSimAccount;
         private int mDefaultAccountState;
+        private int mCallerAccountTypeOwnership;
+        private int mAccountSyncMode;
 
         private Builder() {
         }
@@ -229,10 +256,61 @@ public final class LogFields {
             return this;
         }
 
+        /**
+         * Detects and sets whether the current UID owns the current account type.
+         *
+         * {@link #setAccountType(String)} and {@link #setUid(int)} should be called before this
+         * method.
+         */
+        public Builder detectCallerAccountTypeOwnership(PackageManager packageManager,
+                AuthenticatorDescription[] authenticatorDescriptions) {
+            if (mAccountType == null) {
+                return this;
+            }
+            mCallerAccountTypeOwnership = CallerAccountTypeOwnership.NOT_OWNED;
+            for (AuthenticatorDescription authenticatorDescription : authenticatorDescriptions) {
+                if (mAccountType.equals(authenticatorDescription.type)) {
+                    try {
+                        int authenticatorUid = packageManager.getPackageUid(
+                                authenticatorDescription.packageName, 0);
+                        if (authenticatorUid == mUid) {
+                            mCallerAccountTypeOwnership = CallerAccountTypeOwnership.OWNED;
+                            break;
+                        }
+                    } catch (PackageManager.NameNotFoundException e) {
+                        // Debug level since this is for logging and hence not essential.
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "detectAuthenticatorOwnership failed", e);
+                        }
+                    }
+                }
+            }
+            return this;
+        }
+
+        /** Detects and sets the sync mode of the current account. */
+        public Builder detectAccountSyncMode(SyncAdapterType[] syncAdapterTypes) {
+            if (mAccountType == null) {
+                return this;
+            }
+            for (SyncAdapterType syncAdapterType : syncAdapterTypes) {
+                if (Objects.equals(syncAdapterType.authority, ContactsContract.AUTHORITY)
+                        && syncAdapterType.accountType.equals(mAccountType)) {
+                    if (syncAdapterType.supportsUploading()) {
+                        mAccountSyncMode = AccountSyncMode.BIDIRECTIONAL;
+                    } else {
+                        mAccountSyncMode = AccountSyncMode.DOWN_ONLY;
+                    }
+                }
+            }
+            return this;
+        }
+
         public LogFields build() {
             return new LogFields(mApiType, mUriType, mTaskType, getCallerType(), mStartNanos,
                     getResultType(), mResultUri, mResultCount, mMethodCalled, mUid, mAccountType,
-                    getAccountDataOrigin(), mDefaultAccountState);
+                    getAccountDataOrigin(), mDefaultAccountState, mCallerAccountTypeOwnership,
+                    mAccountSyncMode);
         }
 
         private int getResultType() {

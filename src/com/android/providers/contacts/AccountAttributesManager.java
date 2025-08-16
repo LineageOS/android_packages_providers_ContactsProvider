@@ -85,7 +85,8 @@ public class AccountAttributesManager {
      */
     public Long getAccountAttributes(AccountWithDataSet accountWithDataSet,
             Account[] systemAccounts) {
-        Long accountAttributes = mDbHelper.getAccountAttributes(accountWithDataSet.getAccountName(),
+        AccountAttributesInfo accountAttributesInfo = mDbHelper.getAccountAttributesInfo(
+                accountWithDataSet.getAccountName(),
                 accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
 
         boolean isSystemOrLocalAccount =
@@ -98,7 +99,8 @@ public class AccountAttributesManager {
         }
 
         long now = SystemClock.elapsedRealtime();
-        boolean needsUpdate = needsAccountAttributesUpdate(accountWithDataSet, accountAttributes,
+        boolean needsUpdate = needsAccountAttributesUpdate(accountWithDataSet,
+                accountAttributesInfo,
                 now);
 
         if (needsUpdate) {
@@ -111,7 +113,8 @@ public class AccountAttributesManager {
             synchronized (this) {
                 // Re-check the condition inside the synchronized block
                 // another thread might have finished the update while we were waiting.
-                needsUpdate = needsAccountAttributesUpdate(accountWithDataSet, accountAttributes,
+                needsUpdate = needsAccountAttributesUpdate(accountWithDataSet,
+                        accountAttributesInfo,
                         now);
 
                 if (needsUpdate) {
@@ -119,13 +122,15 @@ public class AccountAttributesManager {
                     if (Log.isLoggable(TAG, Log.VERBOSE)) {
                         Log.v(TAG, "Start to initialize or refresh account attribute");
                     }
-                    accountAttributes = initializeAccountAttributes(accountWithDataSet,
+                    Long accountAttributes = initializeAccountAttributes(accountWithDataSet,
                             isSystemOrLocalAccount);
                     mLastAccountAttributeUpdate.put(accountWithDataSet, now);
+                    return accountAttributes;
                 }
             }
         }
-        return accountAttributes;
+        return accountAttributesInfo == null ? null : accountAttributesInfo.attributes;
+
     }
 
     /**
@@ -148,16 +153,15 @@ public class AccountAttributesManager {
             Log.d(TAG, "Started to refresh all account attributes");
         }
 
-
         final Set<AccountWithDataSet> knownAccountsWithDataSets =
                 mDbHelper.getAllAccountsWithDataSets();
 
         long now = SystemClock.elapsedRealtime();
         for (AccountWithDataSet accountWithDataSet : knownAccountsWithDataSets) {
-            Long accountAttributes = mDbHelper.getAccountAttributes(
+            AccountAttributesInfo accountAttributesInfo = mDbHelper.getAccountAttributesInfo(
                     accountWithDataSet.getAccountName(),
                     accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
-            if (!needsAccountAttributesUpdate(accountWithDataSet, accountAttributes, now)) {
+            if (!needsAccountAttributesUpdate(accountWithDataSet, accountAttributesInfo, now)) {
                 // Account attributes has been updated recently, skip refreshing.
                 continue;
             }
@@ -177,10 +181,11 @@ public class AccountAttributesManager {
     }
 
     private boolean needsAccountAttributesUpdate(AccountWithDataSet accountWithDataSet,
-            Long accountAttributes, long currentTimestamp) {
+            AccountAttributesInfo accountAttributesInfo, long currentTimestamp) {
         long lastUpdate = mLastAccountAttributeUpdate.getOrDefault(accountWithDataSet, 0L);
-        return accountAttributes == null
-                || currentTimestamp > lastUpdate + getAccountAttributesEvaluationRateLimit();
+        return accountAttributesInfo == null
+                || (!accountAttributesInfo.hasOwnerSetAttributes
+                && currentTimestamp > lastUpdate + getAccountAttributesEvaluationRateLimit());
     }
 
     private Long initializeAccountAttributes(AccountWithDataSet accountWithDataSet,
@@ -209,15 +214,17 @@ public class AccountAttributesManager {
             db.endTransaction();
         }
 
-        return mDbHelper.getAccountAttributes(accountWithDataSet.getAccountName(),
+        AccountAttributesInfo accountAttributesInfo = mDbHelper.getAccountAttributesInfo(
+                accountWithDataSet.getAccountName(),
                 accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
+        return accountAttributesInfo == null ? null : accountAttributesInfo.attributes;
     }
 
     private void setAccountAttributesWithOverride(AccountWithDataSet accountWithDataSet,
-            long capabilities, boolean isAppOverride) {
+            long capabilities) {
         mDbHelper.setAccountAttributes(accountWithDataSet.getAccountName(),
                 accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(), capabilities,
-                isAppOverride);
+                true);
     }
 
     /**
@@ -283,7 +290,7 @@ public class AccountAttributesManager {
                             + " type.");
         }
 
-        setAccountAttributesWithOverride(accountWithDataSet, attributes, true);
+        setAccountAttributesWithOverride(accountWithDataSet, attributes);
     }
 
     private long getAccountAttributesEvaluationRateLimit() {

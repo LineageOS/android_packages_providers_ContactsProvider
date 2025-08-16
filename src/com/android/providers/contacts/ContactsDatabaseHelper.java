@@ -4357,32 +4357,42 @@ public class ContactsDatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Get account capabilities column's value for the given account name, account type, and data
-     * set.
-     * If account is not found or account capabilities wasn't not set, returns NULL.
+     * Gets the account attributes and the owner-set status flag for a given account.
+     *
+     * @param accountName The name of the account.
+     * @param accountType The type of the account.
+     * @param dataSet The data set of the account, which may be null.
+     * @return An {@link AccountAttributesInfo} object containing the attributes and the status
+     * flag, or null if the account is not present or account attributes is null.
+     * This method returns {@code null} if the account is not found in the database. The
+     * {@code attributes} field within the returned object can also be {@code null} if the
+     * account exists but its attributes have not been set.
      */
-    public Long getAccountAttributes(String accountName, String accountType, String dataSet) {
+    public AccountAttributesInfo getAccountAttributesInfo(
+            String accountName, String accountType, String dataSet) {
         String whereClause = composeWhereClauseWithAccountAndDataSet(accountName, accountType,
                 dataSet);
 
-        // Construct the full SQL query
-        String sqlQuery = "SELECT " + AccountsColumns.ACCOUNT_ATTRIBUTES
+        String sqlQuery = "SELECT " + AccountsColumns.ACCOUNT_ATTRIBUTES + ", "
+                + AccountsColumns.HAS_OWNER_SET_ATTRIBUTES
                 + " FROM " + Tables.ACCOUNTS
                 + " WHERE " + whereClause;
 
         try (Cursor c = getReadableDatabase().rawQuery(sqlQuery, null)) {
             if (c.moveToFirst()) {
-                if (c.isNull(0)) { // Check if the value is NOT NULL
-                    // Account is found, but no capabilities are stored
+                // The account was found
+                if (c.isNull(0)) {
                     return null;
-                } else {
-                    return c.getLong(0);
                 }
+                long attributes = c.getLong(0);
+                boolean hasOwnerSet = c.getInt(1) == 1;
+                return new AccountAttributesInfo(attributes, hasOwnerSet);
             }
         } catch (Exception e) {
-            Log.i(TAG, "Error in reading account capabilities:" + e);
+            Log.e(TAG, "Error reading account attributes and status", e);
         }
-        // Account is not found.
+
+        // The account was not found or an error occurred.
         return null;
     }
 

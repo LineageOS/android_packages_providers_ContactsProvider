@@ -43,7 +43,8 @@ public class RecordingContactsProviderStatsLog extends ContactsProviderStatsLog 
 
     @Override
     public void write(int code, int arg1, int arg2, int arg3, int arg4, int arg5, long arg6,
-            int arg7, int arg8, int arg9, String arg10, int arg11, int arg12) {
+            int arg7, int arg8, int arg9, String arg10, int arg11, int arg12, int arg13,
+            int arg14) {
         StatsEvent event = StatsEvent.newBuilder()
                 .setAtomId(code)
                 .writeInt(arg1)
@@ -58,6 +59,8 @@ public class RecordingContactsProviderStatsLog extends ContactsProviderStatsLog 
                 .writeString(arg10)
                 .writeInt(arg11)
                 .writeInt(arg12)
+                .writeInt(arg13)
+                .writeInt(arg14)
                 .build();
         try {
             mLoggedAtoms.add(StatsEventTestUtils.convertToAtom(event, mExtensionRegistry));

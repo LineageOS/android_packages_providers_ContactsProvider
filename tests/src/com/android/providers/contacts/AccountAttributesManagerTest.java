@@ -24,6 +24,7 @@ import static android.provider.ContactsContract.Settings.AccountAttributes.ATTRI
 
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -96,16 +97,17 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         long attributes = mManager.getAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET,
                 new Account[]{SYSTEM_ACCOUNT});
 
-        // Assert: The manager returns the evaluated attributes
-        assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD | ATTRIBUTE_SYNC_MODE_DOWN_SYNC, attributes);
         // Assert: The evaluator was called
         verify(mMockEvaluator, times(1)).evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET);
+
+        // Assert: The manager returns the evaluated attributes
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD | ATTRIBUTE_SYNC_MODE_DOWN_SYNC, attributes);
+
         // Assert: The attributes were stored in the database
-        long storedAttrs = mDbHelper.getAccountAttributes(
-                SYSTEM_ACCOUNT_WITH_DATA_SET.getAccountName(),
-                SYSTEM_ACCOUNT_WITH_DATA_SET.getAccountType(),
-                SYSTEM_ACCOUNT_WITH_DATA_SET.getDataSet());
-        assertEquals(attributes, storedAttrs);
+        Long storedAttrs = getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET);
+        assertNotNull(storedAttrs);
+        assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD | ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
+                (long) storedAttrs);
     }
 
     @Test
@@ -179,12 +181,15 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         mManager.updateAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET, newAttributes,
                 new Account[]{SYSTEM_ACCOUNT});
 
-        // Assert: The new attributes are correctly stored in the database
-        long storedAttrs = mDbHelper.getAccountAttributes(
+        // Assert: The new attributes and owner flag are correctly stored in the database
+        AccountAttributesInfo storedInfo = mDbHelper.getAccountAttributesInfo(
                 SYSTEM_ACCOUNT_WITH_DATA_SET.getAccountName(),
                 SYSTEM_ACCOUNT_WITH_DATA_SET.getAccountType(),
                 SYSTEM_ACCOUNT_WITH_DATA_SET.getDataSet());
-        assertEquals(newAttributes, storedAttrs);
+        assertNotNull(storedInfo);
+        assertEquals(newAttributes, (long) storedInfo.attributes);
+        assertTrue("Manual update should set the owner flag to true",
+                storedInfo.hasOwnerSetAttributes);
     }
 
     @Test
@@ -222,15 +227,18 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
     }
 
     private void setAccountAttributeInDb(AccountWithDataSet accountWithDataSet,
-            long accountAttribute) {
+            long accountAttribute, boolean isAppOverride) {
         mDbHelper.setAccountAttributes(accountWithDataSet.getAccountName(),
                 accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet(),
-                accountAttribute, false);
+                accountAttribute, isAppOverride);
     }
 
-    private long getAccountAttributesInDb(AccountWithDataSet accountWithDataSet) {
-        return mDbHelper.getAccountAttributes(accountWithDataSet.getAccountName(),
-                accountWithDataSet.getAccountType(), accountWithDataSet.getDataSet());
+    private Long getAccountAttributesInDb(AccountWithDataSet accountWithDataSet) {
+        AccountAttributesInfo info = mDbHelper.getAccountAttributesInfo(
+                accountWithDataSet.getAccountName(),
+                accountWithDataSet.getAccountType(),
+                accountWithDataSet.getDataSet());
+        return info != null ? info.attributes : null;
     }
 
     @Test
@@ -239,7 +247,7 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         // Arrange:
         // Account 1 (SYSTEM_ACCOUNT): Will be treated as stale because its attributes are not yet
         // cached or stored. We must ensure it's known to the DB to be included in the refresh.
-        setAccountAttributeInDb(SYSTEM_ACCOUNT_WITH_DATA_SET, 0L);
+        setAccountAttributeInDb(SYSTEM_ACCOUNT_WITH_DATA_SET, 0L, false);
         when(mMockEvaluator.evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET)).thenReturn(
                 ATTRIBUTE_DATA_ORIGIN_CLOUD);
         // Set a refresh rate limit to a very short one.
@@ -255,7 +263,7 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         // Verify:
         // Expects the account attributes got reevaluated and return a fresh one.
         assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
-                getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET));
+                (long) getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET));
         assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
                 (long) mManager.getAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET,
                         new Account[]{SYSTEM_ACCOUNT}));
@@ -272,7 +280,7 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         // Expects the account attributes didn't get reevaluated and thus return a stale one.
         verify(mMockEvaluator, times(1)).evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET);
         assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
-                getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET));
+                (long) getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET));
         assertEquals(ATTRIBUTE_DATA_ORIGIN_CLOUD,
                 (long) mManager.getAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET,
                         new Account[]{SYSTEM_ACCOUNT}));
@@ -284,7 +292,7 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         // Arrange:
         // Account 1 (SIM_ACCOUNT): Will be treated as stale because its attributes are not yet
         // cached or stored. We must ensure it's known to the DB to be included in the refresh.
-        setAccountAttributeInDb(SIM_ACCOUNT_WITH_DATA_SET, 0L);
+        setAccountAttributeInDb(SIM_ACCOUNT_WITH_DATA_SET, 0L, false);
         when(mMockEvaluator.evaluate(SIM_ACCOUNT_WITH_DATA_SET)).thenReturn(
                 ATTRIBUTE_DATA_ORIGIN_SIM);
         // Set a refresh rate limit to a very short one.
@@ -300,7 +308,7 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         // Verify:
         // Expects the account attributes got reevaluated and return a fresh one.
         assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
-                getAccountAttributesInDb(SIM_ACCOUNT_WITH_DATA_SET));
+                (long) getAccountAttributesInDb(SIM_ACCOUNT_WITH_DATA_SET));
         assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
                 (long) mManager.getAccountAttributes(SIM_ACCOUNT_WITH_DATA_SET, new Account[0]));
         verify(mMockEvaluator, times(1)).evaluate(SIM_ACCOUNT_WITH_DATA_SET);
@@ -315,9 +323,43 @@ public class AccountAttributesManagerTest extends BaseContactsProvider2Test {
         // Expects the account attributes didn't get reevaluated and thus return a stale one.
         verify(mMockEvaluator, times(1)).evaluate(SIM_ACCOUNT_WITH_DATA_SET);
         assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
-                getAccountAttributesInDb(SIM_ACCOUNT_WITH_DATA_SET));
+                (long) getAccountAttributesInDb(SIM_ACCOUNT_WITH_DATA_SET));
         assertEquals(ATTRIBUTE_DATA_ORIGIN_SIM,
                 (long) mManager.getAccountAttributes(SIM_ACCOUNT_WITH_DATA_SET,
                         new Account[]{SYSTEM_ACCOUNT}));
+    }
+
+    @Test
+    public void testRefreshAllAccountAttributes_skipsOwnerSetAccounts() throws Exception {
+        // Arrange: Set an account with the owner-set flag to true.
+        final long initialAttributes = ATTRIBUTE_DATA_ORIGIN_LOCAL;
+        setAccountAttributeInDb(SYSTEM_ACCOUNT_WITH_DATA_SET, initialAttributes, true);
+
+        // Arrange: Make the account stale by setting a zero rate limit.
+        mManager.setAccountAttributesUpdateRateLimit(0L);
+        TimeUnit.MILLISECONDS.sleep(10); // Ensure time has passed to be considered stale.
+
+        // Arrange: If the evaluator were called, it would return a different value.
+        when(mMockEvaluator.evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET)).thenReturn(
+                ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Act: Run the refresh process for all accounts.
+        mManager.refreshAllAccountAttributes(new Account[]{SYSTEM_ACCOUNT});
+
+        // Assert: The evaluator should NOT have been called because the owner-set flag takes
+        // priority.
+        verify(mMockEvaluator, never()).evaluate(SYSTEM_ACCOUNT_WITH_DATA_SET);
+
+        // Assert: The attributes in the database should remain unchanged.
+        Long attributesInDb = getAccountAttributesInDb(SYSTEM_ACCOUNT_WITH_DATA_SET);
+        assertNotNull(attributesInDb);
+        assertEquals("Attributes should not be refreshed for owner-set accounts",
+                initialAttributes, (long) attributesInDb);
+
+        Long attributesReturnByGet = mManager.getAccountAttributes(SYSTEM_ACCOUNT_WITH_DATA_SET,
+                new Account[]{SYSTEM_ACCOUNT});
+        assertNotNull(attributesReturnByGet);
+        assertEquals("Attributes should not be refreshed for owner-set accounts",
+                initialAttributes, (long) attributesReturnByGet);
     }
 }
