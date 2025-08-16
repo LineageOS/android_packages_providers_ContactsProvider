@@ -247,4 +247,17 @@ public class LogFieldsBuilderTest {
 
         assertEquals(CallerType.CALLER_IS_NOT_SYNC_ADAPTER, builder.build().getCallerType());
     }
+
+
+    @Test
+    public void getAccountType_truncatedToMaxAccountTypeLength() {
+        final String longAccountType = "123456789.123456789.123456789.123456789.123456789."
+                + "and.more.stuff.that.will.be.truncated";
+        final String expectedAccountType = "123456789.123456789.123456789.123456789.123456789.";
+
+        final LogFields.Builder builder = LogFields.Builder.aLogFields()
+                .setAccountType(longAccountType);
+
+        assertEquals(expectedAccountType, builder.build().getAccountType());
+    }
 }

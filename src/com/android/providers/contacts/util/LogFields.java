@@ -150,6 +150,14 @@ public final class LogFields {
 
 
     public static final class Builder {
+
+        /**
+         * The maximum length of the account type string to include for logging.
+         *
+         * If the account type string is longer then this it will be truncated to this length.
+         */
+        private static final int MAX_ACCOUNT_TYPE_LENGTH = 50;
+
         private int mApiType;
         private int mUriType;
         private int mTaskType;
@@ -308,9 +316,17 @@ public final class LogFields {
 
         public LogFields build() {
             return new LogFields(mApiType, mUriType, mTaskType, getCallerType(), mStartNanos,
-                    getResultType(), mResultUri, mResultCount, mMethodCalled, mUid, mAccountType,
-                    getAccountDataOrigin(), mDefaultAccountState, mCallerAccountTypeOwnership,
-                    mAccountSyncMode);
+                    getResultType(), mResultUri, mResultCount, mMethodCalled, mUid,
+                    getAccountType(), getAccountDataOrigin(), mDefaultAccountState,
+                    mCallerAccountTypeOwnership, mAccountSyncMode);
+        }
+
+        private String getAccountType() {
+            if (mAccountType != null && mAccountType.length() > MAX_ACCOUNT_TYPE_LENGTH) {
+                return mAccountType.substring(0, MAX_ACCOUNT_TYPE_LENGTH);
+            } else {
+                return mAccountType;
+            }
         }
 
         private int getResultType() {
