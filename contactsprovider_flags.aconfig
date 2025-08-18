@@ -67,3 +67,12 @@ flag {
    description: "Enables logging of account metadata for raw contact and group inserts"
    bug: "427735757"
 }
+flag {
+   name: "restrict_pii_data_uri_columns"
+   namespace: "profile_experiences"
+   description: "Restricts PII columns from data view of CP2"
+   bug: "437318646"
+   metadata {
+       purpose: PURPOSE_BUGFIX
+   }
+}
