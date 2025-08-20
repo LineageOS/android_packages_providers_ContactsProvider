@@ -9874,11 +9874,9 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
                 () -> queryAccountAttributes(mAccount.name, mAccount.type, null));
 
         Assert.assertThrows(UnsupportedOperationException.class,
-                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
-                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD, 0L));
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null, 0L));
         Assert.assertThrows(UnsupportedOperationException.class,
                 () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
-                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
                         AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL));
     }
 
@@ -9889,20 +9887,17 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
 
         // Unknown package is the authenticator of mAccount.type.
         mActor.setAuthenticators(new AuthenticatorDescription[]{
-                new AuthenticatorDescription(mAccount.type,
-                        "unknown.package",
-                        0, 0, 0, 0)});
+                new AuthenticatorDescription(mAccount.type, "unknown.package", 0, 0, 0, 0)});
 
         // Query is OKay.
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
                 AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
 
         // Setting account attributes should fail with SecurityException.
-        Assert.assertThrows(
-                SecurityException.class, () ->
-                        updateAccountAttributes(mAccount.name, mAccount.type, null,
-                                0L, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
-                                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
+        Assert.assertThrows(SecurityException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                                | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
 
         // Account attributes is unchanged
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
@@ -9916,11 +9911,10 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
                 AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
 
         // Setting account attributes should fail with SecurityException.
-        Assert.assertThrows(
-                SecurityException.class, () ->
-                        updateAccountAttributes(mAccount.name, mAccount.type, null,
-                                0L, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
-                                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
+        Assert.assertThrows(SecurityException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                                | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
     }
 
     @Test
@@ -9928,49 +9922,31 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
     public void testAccountAttributesSetAndQuery() {
         mActor.setAccounts(new Account[]{mAccount});
         mActor.setAuthenticators(new AuthenticatorDescription[]{
-                new AuthenticatorDescription(mAccount.type,
-                        mContext.getPackageName(),
-                        0, 0, 0, 0)});
+                new AuthenticatorDescription(mAccount.type, mContext.getPackageName(), 0, 0, 0,
+                        0)});
 
+        // Test initial query returns default.
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
                 AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
 
+        // Set new attributes and verify.
         updateAccountAttributes(mAccount.name, mAccount.type, null,
-                0L, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC);
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
-                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC);
 
-        // Update to CAPABILITY_DATA_TYPE_CUSTOM_DECLARED and CAPABILITY_SYNC_MODE_DOWNLOAD_ONLY
-        updateAccountAttributes(mAccount.name, mAccount.type, null,
-                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD,
-                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+        // Reset the attributes.
+        resetAccountAttributes(mAccount.name, mAccount.type, null);
+
+        // Verify attributes have reverted to the default.
         queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
-                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
-
-        // Update attributes to the same value as before
-        updateAccountAttributes(mAccount.name, mAccount.type, null,
-                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
-                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
-        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
-                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
-
-        // Clear all attributes.
-        updateAccountAttributes(mAccount.name, mAccount.type, null,
-                AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED
-                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC,
-                0L);
-        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null, 0L);
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
     }
 
     private void updateAccountAttributes(String accountName, String accountType, String dataSet,
-            long expectedPreviousCapabilities, long newCapabilities) {
+            long newCapabilities) {
         Bundle setBundle = new Bundle();
         setBundle.putString(Settings.ACCOUNT_NAME, accountName);
         setBundle.putString(Settings.ACCOUNT_TYPE, accountType);
@@ -9981,6 +9957,18 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
         mResolver.call(ContactsContract.AUTHORITY_URI,
                 Settings.SET_ACCOUNT_ATTRIBUTES_METHOD,
                 null, setBundle);
+    }
+
+    private void resetAccountAttributes(String accountName, String accountType, String dataSet) {
+        Bundle resetBundle = new Bundle();
+        resetBundle.putString(Settings.ACCOUNT_NAME, accountName);
+        resetBundle.putString(Settings.ACCOUNT_TYPE, accountType);
+        if (dataSet != null) {
+            resetBundle.putString(Settings.DATA_SET, dataSet);
+        }
+        mResolver.call(ContactsContract.AUTHORITY_URI,
+                Settings.RESET_ACCOUNT_ATTRIBUTES_METHOD,
+                null, resetBundle);
     }
 
     private void queryAndAssertAccountAttributes(String accountName, String accountType,

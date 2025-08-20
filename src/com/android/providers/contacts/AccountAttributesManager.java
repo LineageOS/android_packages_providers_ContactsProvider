@@ -188,7 +188,23 @@ public class AccountAttributesManager {
                 && currentTimestamp > lastUpdate + getAccountAttributesEvaluationRateLimit());
     }
 
-    private Long initializeAccountAttributes(AccountWithDataSet accountWithDataSet,
+    /**
+     * Initializes or re-evaluates attributes for an account based on system logic.
+     *
+     * <p>This method calculates the default attributes using the
+     * {@link AccountAttributesEvaluator} and persists them to the database. It marks the
+     * attributes as system-evaluated (i.e., not overridden by an owner). This method is
+     * effectively used to "reset" an account's attributes to their default state.
+     *
+     * @param accountWithDataSet The account to initialize.
+     * @param isSystemOrLocalAccount A boolean indicating if the account is a valid system or
+     * local account.
+     * @return The newly evaluated attributes, or {@code null} if the information could not be
+     * retrieved after saving.
+     * @throws IllegalArgumentException if the account becomes invalid during the transaction.
+     * @hide
+     */
+    public Long initializeAccountAttributes(AccountWithDataSet accountWithDataSet,
             boolean isSystemOrLocalAccount) {
         long newAccountAttributes = mAccountAttributesEvaluator.evaluate(accountWithDataSet);
 

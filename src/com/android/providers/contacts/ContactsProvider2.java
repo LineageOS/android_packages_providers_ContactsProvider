@@ -2865,6 +2865,36 @@ public class ContactsProvider2 extends AbstractContactsProvider
             mAccountAttributesManager.updateAccountAttributes(accountWithDataSet,
                     extras.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES), systemAccounts);
             return new Bundle();
+        } else if (Settings.RESET_ACCOUNT_ATTRIBUTES_METHOD.equals(method)) {
+            if (!newAccountAttributesApiEnabled()) {
+                throw new UnsupportedOperationException(
+                        "Resetting account attributes is not supported");
+            }
+            ContactsPermissions.enforceCallingOrSelfPermission(getContext(), WRITE_PERMISSION);
+
+            String accountName = extras.getString(Settings.ACCOUNT_NAME);
+            String accountType = extras.getString(Settings.ACCOUNT_TYPE);
+            String dataSet = extras.getString(Settings.DATA_SET);
+
+            if (!isCalledByAuthenticator(getCallingPackage(), accountType)) {
+                throw new SecurityException(String.format(
+                        "Cannot reset account attributes: The calling package %s is not the "
+                                + "authenticator for this account.",
+                        getCallingPackage()));
+            }
+
+            AccountWithDataSet accountWithDataSet = new AccountWithDataSet(accountName, accountType,
+                    dataSet);
+            Account[] systemAccounts = AccountManager.get(getContext()).getAccounts();
+
+            boolean isSystemOrLocalAccount =
+                    accountWithDataSet.isLocalAccount() || accountWithDataSet.inSystemAccounts(
+                            systemAccounts);
+
+            mAccountAttributesManager.initializeAccountAttributes(accountWithDataSet,
+                    isSystemOrLocalAccount);
+
+            return new Bundle();
         }
         return null;
     }
