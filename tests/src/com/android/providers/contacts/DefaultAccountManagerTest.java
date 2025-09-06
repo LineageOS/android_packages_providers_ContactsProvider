@@ -17,16 +17,31 @@
 package com.android.providers.contacts;
 
 import static android.provider.ContactsContract.SimAccount.SDN_EF_TYPE;
+import static android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED;
 
+import static com.android.providers.contacts.flags.Flags.FLAG_ENABLE_DYNAMIC_ELIGIBLE_DEFAULT_ACCOUNT;
+import static com.android.providers.contacts.flags.Flags.enableDynamicEligibleDefaultAccount;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.database.sqlite.SQLiteDatabase;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
+import android.provider.ContactsContract.Settings.AccountAttributes;
 
 import androidx.test.filters.SmallTest;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
@@ -35,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 
 @SmallTest
+@RunWith(JUnit4.class)
 public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
     private static final String TAG = "DefaultAccountManagerTest";
     private static final Account SYSTEM_CLOUD_ACCOUNT_1 = new Account("user1@xyz.com",
@@ -45,21 +61,29 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
     private static final Account SIM_ACCOUNT_1 = new Account("SIM_ACCOUNT_NAME",
             "SIM_ACCOUNT_TYPE");
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private ContactsDatabaseHelper mDbHelper;
     private DefaultAccountManager mDefaultAccountManager;
     private AccountManager mMockAccountManager;
 
     private SyncSettingsHelper mSyncSettingsHelper;
 
+    private AccountAttributesManager mAccountAttributesManager;
+
     @Override
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         super.setUp();
 
         mDbHelper = getContactsProvider().getDatabaseHelper();
         mMockAccountManager = Mockito.mock(AccountManager.class);
         mSyncSettingsHelper = Mockito.mock(SyncSettingsHelper.class);
+        mAccountAttributesManager = Mockito.mock(AccountAttributesManager.class);
         mDefaultAccountManager = new DefaultAccountManager(getContactsProvider().getContext(),
-                mDbHelper, mSyncSettingsHelper, mMockAccountManager); // Inject mockAccountManager
+                mDbHelper, mSyncSettingsHelper, mMockAccountManager,
+                mAccountAttributesManager); // Inject mockAccountManager
 
         setAccounts(new Account[0]);
         DefaultAccountManager.setEligibleSystemCloudAccountTypesForTesting(
@@ -96,6 +120,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
         }
     }
 
+    @Test
     public void testPushDca_noCloudAccountsSignedIn() {
         assertEquals(DefaultAccountAndState.ofNotSet(),
                 mDefaultAccountManager.pullDefaultAccount());
@@ -117,6 +142,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
         assertEquals(List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
     }
 
+    @Test
     public void testPushDeviceAccountAsDca_cloudSyncIsOff() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1});
 
@@ -153,6 +179,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
         assertEquals(List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
     }
 
+    @Test
     public void testPushCustomizedDeviceAccountAsDca_cloudSyncIsOff() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1});
         turnOffSync(SYSTEM_CLOUD_ACCOUNT_1);
@@ -186,6 +213,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
         assertEquals(List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
     }
 
+    @Test
     public void testPushDca_dcaWasUnknown_tryPushDeviceAndThenCloudAccount() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1});
         turnOnSync(SYSTEM_CLOUD_ACCOUNT_1);
@@ -222,6 +250,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
 
     }
 
+    @Test
     public void testPushDca_dcaWasUnknown_tryPushSimAccount() {
         createSimAccount(SIM_ACCOUNT_1);
 
@@ -235,6 +264,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
                 mDefaultAccountManager.pullDefaultAccount());
     }
 
+    @Test
     public void testPushDca_dcaWasCloud() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1});
         turnOnSync(SYSTEM_CLOUD_ACCOUNT_1);
@@ -271,6 +301,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
 
     }
 
+    @Test
     public void testPushDca_dcaWasUnknown_tryPushAccountNotSignedIn() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1});
 
@@ -292,6 +323,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
 
     }
 
+    @Test
     public void testPushDca_dcaWasUnknown_tryPushNonSystemCloudAccount() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1, NON_SYSTEM_CLOUD_ACCOUNT_1});
 
@@ -315,6 +347,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
 
     }
 
+    @Test
     public void testPushDca_dcaWasCloud_tryPushAccountNotSignedIn() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1});
 
@@ -339,6 +372,7 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
 
     }
 
+    @Test
     public void testPushDca_dcaWasCloud_tryPushNonSystemCloudAccount() {
         setAccounts(new Account[]{SYSTEM_CLOUD_ACCOUNT_1, NON_SYSTEM_CLOUD_ACCOUNT_1});
 
@@ -361,6 +395,84 @@ public class DefaultAccountManagerTest extends BaseContactsProvider2Test {
         // Cloud account eligible for default accounts doesn't change.
         assertEquals(List.of(SYSTEM_CLOUD_ACCOUNT_1),
                 mDefaultAccountManager.getEligibleCloudAccounts());
+    }
+
+    /**
+     * Tests the dynamic eligibility logic for cloud accounts based on their attributes.
+     *
+     * <p>This test verifies that {@code getEligibleCloudAccounts} correctly interprets an
+     * account's
+     * attributes when the {@code enable_dynamic_eligible_default_account} flag is enabled.
+     * According to the feature logic, an account is only considered "eligible" if it meets
+     * all of the following criteria:
+     * <ul>
+     * <li>Has the {@code ATTRIBUTE_DATA_ORIGIN_CLOUD} attribute.</li>
+     * <li>Has the {@code ATTRIBUTE_SYNC_MODE_UP_SYNC} attribute.</li>
+     * <li>Does NOT have the {@code ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED} attribute.</li>
+     * </ul>
+     * The test uses Mockito to simulate various combinations of these attributes and asserts
+     * that the
+     * account is only returned when the exact success criteria are met.
+     */
+    @Test
+    @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED,
+            FLAG_ENABLE_DYNAMIC_ELIGIBLE_DEFAULT_ACCOUNT})
+    public void testGetEligibleCloudAccounts_dynamicEligibilityEnabled() {
+        if (!enableDynamicEligibleDefaultAccount()) {
+            // Skip the test when flag is not enabled.
+            return;
+        }
+
+        setAccounts(new Account[]{NON_SYSTEM_CLOUD_ACCOUNT_1});
+        assertEquals(List.of(),
+                mDefaultAccountManager.getEligibleCloudAccounts());
+
+        AccountWithDataSet accountWithDataSet = new AccountWithDataSet(
+                NON_SYSTEM_CLOUD_ACCOUNT_1.name, NON_SYSTEM_CLOUD_ACCOUNT_1.type, null);
+
+        // Test case: Initially, without any mock, attributes are null. Account is not eligible.
+        assertEquals("Account should not be eligible if attributes are null",
+                List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
+
+        // Test case: Account has CLOUD but is missing UP_SYNC. Should not be eligible.
+        Mockito.when(mAccountAttributesManager.getAccountAttributes(eq(accountWithDataSet),
+                any())).thenReturn(
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+        assertEquals("Account with only CLOUD attribute should be ineligible",
+                List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
+
+        // Test case: Account has both CLOUD and UP_SYNC. This is the success condition.
+        Mockito.when(mAccountAttributesManager.getAccountAttributes(eq(accountWithDataSet),
+                any())).thenReturn(
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC);
+        assertEquals("Account with CLOUD and UP_SYNC attributes should be eligible",
+                List.of(NON_SYSTEM_CLOUD_ACCOUNT_1),
+                mDefaultAccountManager.getEligibleCloudAccounts());
+
+        // Test case: Account has CLOUD and the disqualifying CUSTOM_DECLARED. Ineligible.
+        Mockito.when(mAccountAttributesManager.getAccountAttributes(eq(accountWithDataSet),
+                any())).thenReturn(
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                        | AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED);
+        assertEquals("Account with CUSTOM_DECLARED attribute should be ineligible",
+                List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
+
+        // Test case: Account has all three attributes. Still ineligible due to CUSTOM_DECLARED.
+        Mockito.when(mAccountAttributesManager.getAccountAttributes(eq(accountWithDataSet),
+                any())).thenReturn(
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
+                        | AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED);
+        assertEquals("Account with CUSTOM_DECLARED attribute should be ineligible even with others",
+                List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
+
+        // Test case: Account has UP_SYNC but is missing CLOUD. Should not be eligible.
+        Mockito.when(mAccountAttributesManager.getAccountAttributes(eq(accountWithDataSet),
+                any())).thenReturn(
+                AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC);
+        assertEquals("Account with only UP_SYNC attribute should be ineligible",
+                List.of(), mDefaultAccountManager.getEligibleCloudAccounts());
     }
 
     private void createSimAccount(Account account) {

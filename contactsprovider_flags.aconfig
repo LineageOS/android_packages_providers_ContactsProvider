@@ -76,3 +76,9 @@ flag {
        purpose: PURPOSE_BUGFIX
    }
 }
+flag {
+   name: "enable_dynamic_eligible_default_account"
+   namespace: "contacts"
+   description: "Enables default account eligibility dynamically determined by account attributes"
+   bug: "427735757"
+}

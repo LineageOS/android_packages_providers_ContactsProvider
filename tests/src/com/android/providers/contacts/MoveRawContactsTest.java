@@ -93,6 +93,8 @@ public class MoveRawContactsTest extends BaseContactsProvider2Test {
 
     SyncSettingsHelper mSyncSettingsHelper;
 
+    AccountAttributesManager mAccountAttributesManager;
+
     @Before
     @Override
     public void setUp() throws Exception {
@@ -101,8 +103,10 @@ public class MoveRawContactsTest extends BaseContactsProvider2Test {
         mCp = (ContactsProvider2) getProvider();
         mMockAccountManager = Mockito.mock(AccountManager.class);
         mSyncSettingsHelper = Mockito.mock(SyncSettingsHelper.class);
+        mAccountAttributesManager = Mockito.mock(AccountAttributesManager.class);
         mDefaultAccountManager = new DefaultAccountManager(mCp.getContext(),
-                mCp.getDatabaseHelper(), mSyncSettingsHelper, mMockAccountManager);
+                mCp.getDatabaseHelper(), mSyncSettingsHelper, mMockAccountManager,
+                mAccountAttributesManager);
         mActor.setAccounts(new Account[]{SOURCE_ACCOUNT, DEST_ACCOUNT});
         mSource = AccountWithDataSet.get(SOURCE_ACCOUNT.name, SOURCE_ACCOUNT.type, null);
         mDest = AccountWithDataSet.get(DEST_ACCOUNT.name, DEST_ACCOUNT.type, null);

@@ -1647,14 +1647,16 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
         mContactDirectoryManager = new ContactDirectoryManager(this);
         mGlobalSearchSupport = new GlobalSearchSupport(this);
-        mDefaultAccountManager = new DefaultAccountManager(getContext(), mContactsHelper);
-        AccountManager accountManager = AccountManager.get(getContext());
-        mAccountResolver = new AccountResolver(mContactsHelper, mDefaultAccountManager,
-                accountManager);
 
         mAccountAttributesEvaluator = new AccountAttributesEvaluator(getContext(), mContactsHelper);
         mAccountAttributesManager = new AccountAttributesManager(mContactsHelper,
                 mAccountAttributesEvaluator);
+        mDefaultAccountManager = new DefaultAccountManager(getContext(), mContactsHelper,
+                mAccountAttributesManager);
+        AccountManager accountManager = AccountManager.get(getContext());
+        mAccountResolver = new AccountResolver(mContactsHelper, mDefaultAccountManager,
+                accountManager);
+
         mContactMover = new ContactMover(this, mContactsHelper, mDefaultAccountManager);
 
         if (mContactsHelper.getPhoneAccountHandleMigrationUtils()
@@ -2231,6 +2233,11 @@ public class ContactsProvider2 extends AbstractContactsProvider
     @VisibleForTesting
     /* package */ PhotoStore getProfilePhotoStore() {
         return mProfilePhotoStore;
+    }
+
+    @VisibleForTesting
+    /* package*/ AccountAttributesManager getAccountAttributesManager() {
+        return mAccountAttributesManager;
     }
 
     /**
