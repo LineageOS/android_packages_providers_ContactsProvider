@@ -710,6 +710,14 @@ public class ContactsProvider2 extends AbstractContactsProvider
             .add(RawContacts.VERSION)
             .build();
 
+    private static final ProjectionMap sRawContactColumnsRestricted = ProjectionMap.builder()
+            .add(RawContacts.DATA_SET)
+            .add(RawContacts.DIRTY)
+            .add(RawContacts.SOURCE_ID)
+            .add(RawContacts.BACKUP_ID)
+            .add(RawContacts.VERSION)
+            .build();
+
     private static final ProjectionMap sRawContactSyncColumns = ProjectionMap.builder()
             .add(RawContacts.SYNC1)
             .add(RawContacts.SYNC2)
@@ -925,9 +933,31 @@ public class ContactsProvider2 extends AbstractContactsProvider
             .addAll(sDataUsageColumns)
             .build();
 
+    private static final ProjectionMap sDataProjectionMapRestricted = ProjectionMap.builder()
+            .add(Data._ID)
+            .add(Data.RAW_CONTACT_ID)
+            .add(Data.HASH_ID)
+            .add(Data.CONTACT_ID)
+            .add(Data.NAME_RAW_CONTACT_ID)
+            .add(RawContacts.RAW_CONTACT_IS_USER_PROFILE)
+            .addAll(sDataColumns)
+            .addAll(sDataPresenceColumns)
+            .addAll(sRawContactColumnsRestricted)
+            .addAll(sContactsColumns)
+            .addAll(sContactPresenceColumns)
+            .addAll(sDataUsageColumns)
+            .build();
+
     /** Contains columns from the data view used for SIP address lookup. */
     private static final ProjectionMap sDataSipLookupProjectionMap = ProjectionMap.builder()
             .addAll(sDataProjectionMap)
+            .addAll(sSipLookupColumns)
+            .build();
+
+    /** Contains columns from the data view used for SIP address lookup. */
+    private static final ProjectionMap sDataSipLookupProjectionMapRestricted = ProjectionMap
+            .builder()
+            .addAll(sDataProjectionMapRestricted)
             .addAll(sSipLookupColumns)
             .build();
 
@@ -6421,8 +6451,10 @@ public class ContactsProvider2 extends AbstractContactsProvider
         }
     }
 
-    private static Cursor createEmptyCursor(final Uri uri, String[] projection) {
-        projection = projection == null ? getDefaultProjection(uri) : projection;
+    private static Cursor createEmptyCursor(final Uri uri,
+            String[] projection, boolean restrictDataColumns) {
+        projection = projection == null
+                ? getDefaultProjection(uri, restrictDataColumns) : projection;
         if (projection == null) {
             return null;
         }
@@ -6456,7 +6488,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
         }
 
         if (projection == null) {
-            projection = getDefaultProjection(uri);
+            projection = getDefaultProjection(uri, isDataProjectionRestricted());
         }
 
         // Handle directories in stopped state
@@ -6561,7 +6593,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
             CancellationSignal cancellationSignal) {
         final int corpUserId = UserUtils.getCorpUserId(getContext());
         if (corpUserId < 0) {
-            return createEmptyCursor(localUri, projection);
+            return createEmptyCursor(localUri, projection, isDataProjectionRestricted());
         }
         // Make sure authority is CP2 not other providers
         validateAuthority(localUri.getAuthority());
@@ -6572,7 +6604,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
         Cursor cursor = getContext().getContentResolver().query(remoteUri, projection, selection,
                 selectionArgs, sortOrder, cancellationSignal);
         if (cursor == null) {
-            return createEmptyCursor(localUri, projection);
+            return createEmptyCursor(localUri, projection, isDataProjectionRestricted());
         }
         return cursor;
     }
@@ -6610,7 +6642,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
             CancellationSignal cancellationSignal) {
         final UserInfo parentUserInfo = UserUtils.getProfileParentUser(getContext());
         if (parentUserInfo == null) {
-            return createEmptyCursor(uri, projection);
+            return createEmptyCursor(uri, projection, isDataProjectionRestricted());
         }
         // Make sure authority is CP2 not other providers
         validateAuthority(uri.getAuthority());
@@ -6618,7 +6650,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
                 sortOrder, cancellationSignal, parentUserInfo);
         if (cursor == null) {
             Log.w(TAG, "null cursor returned from primary CP2");
-            return createEmptyCursor(uri, projection);
+            return createEmptyCursor(uri, projection, isDataProjectionRestricted());
         }
         return cursor;
     }
@@ -9232,10 +9264,14 @@ public class ContactsProvider2 extends AbstractContactsProvider
 
         final ProjectionMap projectionMap;
         if (addSipLookupColumns) {
+            final ProjectionMap sipDataProjectionMap = isDataProjectionRestricted()
+                    ? sDataSipLookupProjectionMapRestricted : sDataSipLookupProjectionMap;
             projectionMap =
-                    useDistinct ? sDistinctDataSipLookupProjectionMap : sDataSipLookupProjectionMap;
+                    useDistinct ? sDistinctDataSipLookupProjectionMap : sipDataProjectionMap;
         } else {
-            projectionMap = useDistinct ? sDistinctDataProjectionMap : sDataProjectionMap;
+            final ProjectionMap dataProjectionMap = isDataProjectionRestricted()
+                    ? sDataProjectionMapRestricted : sDataProjectionMap;
+            projectionMap = useDistinct ? sDistinctDataProjectionMap : dataProjectionMap;
         }
 
         qb.setProjectionMap(projectionMap);
@@ -10277,7 +10313,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
         }
     }
 
-    private static String[] getDefaultProjection(Uri uri) {
+    private static String[] getDefaultProjection(Uri uri, boolean restrictDataProjection) {
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case CONTACTS:
@@ -10318,7 +10354,9 @@ public class ContactsProvider2 extends AbstractContactsProvider
             case POSTALS:
             case POSTALS_ID:
             case PROFILE_DATA:
-                return sDataProjectionMap.getColumnNames();
+                return restrictDataProjection
+                        ? sDataProjectionMapRestricted.getColumnNames()
+                        : sDataProjectionMap.getColumnNames();
 
             case PHONE_LOOKUP:
             case PHONE_LOOKUP_ENTERPRISE:
@@ -10416,7 +10454,10 @@ public class ContactsProvider2 extends AbstractContactsProvider
      */
     private Cursor completeName(Uri uri, String[] projection) {
         if (projection == null) {
-            projection = sDataProjectionMap.getColumnNames();
+
+            projection = isDataProjectionRestricted()
+                    ? sDataProjectionMapRestricted.getColumnNames()
+                    : sDataProjectionMap.getColumnNames();
         }
 
         ContentValues values = new ContentValues();
@@ -11001,5 +11042,15 @@ public class ContactsProvider2 extends AbstractContactsProvider
     @NeededForTesting
     void setSearchIndexMaxUpdateFilterContacts(int maxUpdateFilterContacts) {
         mSearchIndexManager.setMaxUpdateFilterContacts(maxUpdateFilterContacts);
+    }
+
+    @RequiresPermission(
+            allOf = {
+                    android.Manifest.permission.READ_COMPAT_CHANGE_CONFIG,
+                    android.Manifest.permission.LOG_COMPAT_CHANGE
+            })
+    private boolean isDataProjectionRestricted() {
+        return CompatChanges.isChangeEnabled(ChangeIds.RESTRICT_DATA_URI_COLUMNS,
+                Binder.getCallingUid());
     }
 }
