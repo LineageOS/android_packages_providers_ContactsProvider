@@ -16,22 +16,17 @@
 package com.android.providers.contacts;
 
 import android.annotation.Nullable;
-import android.content.ContentValues;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteCantOpenDatabaseException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.preference.PreferenceManager;
 import android.provider.CallLog.Calls;
 import android.provider.VoicemailContract;
 import android.provider.VoicemailContract.Status;
 import android.provider.VoicemailContract.Voicemails;
-import android.telephony.SubscriptionInfo;
-import android.telephony.SubscriptionManager;
 import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
@@ -40,10 +35,6 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.providers.contacts.util.PhoneAccountHandleMigrationUtils;
 import com.android.providers.contacts.util.PropertyUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * SQLite database (helper) for {@link CallLogProvider} and {@link VoicemailContentProvider}.
  */
@@ -51,7 +42,7 @@ public class CallLogDatabaseHelper {
     private static final String TAG = "CallLogDatabaseHelper";
 
     @VisibleForTesting
-    static final int DATABASE_VERSION = 13;
+    static final int DATABASE_VERSION = 14;
 
     private static final boolean DEBUG = false; // DON'T SUBMIT WITH TRUE
 
@@ -177,6 +168,7 @@ public class CallLogDatabaseHelper {
                     Calls.IS_BUSINESS_CALL + " INTEGER NOT NULL DEFAULT 0," +
                     Calls.ASSERTED_DISPLAY_NAME + " TEXT," +
                     Calls.UUID + " TEXT," +
+                    Calls.PREFERRED_DISPLAY_NAME + " TEXT," +
 
                     Voicemails._DATA + " TEXT," +
                     Voicemails.HAS_CONTENT + " INTEGER," +
@@ -263,6 +255,10 @@ public class CallLogDatabaseHelper {
 
             if (oldVersion < 13) {
                 upgradeToVersion13(db);
+            }
+
+            if (oldVersion < 14) {
+                upgradeToVersion14(db);
             }
         }
 
@@ -559,6 +555,14 @@ public class CallLogDatabaseHelper {
             db.execSQL("ALTER TABLE calls ADD uuid TEXT");
         } catch (SQLException ignore) {
             Log.i(TAG, String.format("upgradeToVersion13: SQLException occurred e=[%s]", ignore));
+        }
+    }
+
+    private void upgradeToVersion14(SQLiteDatabase db) {
+        try {
+            db.execSQL("ALTER TABLE calls ADD preferred_display_name TEXT");
+        } catch (SQLException ignore) {
+            Log.i(TAG, String.format("upgradeToVersion14: SQLException occurred e=[%s]", ignore));
         }
     }
 

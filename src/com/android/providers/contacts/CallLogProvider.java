@@ -170,7 +170,8 @@ public class CallLogProvider extends ContentProvider {
             Calls.SUBJECT,
             Calls.COMPOSER_PHOTO_URI,
             // Location is deliberately omitted
-            Calls.ADD_FOR_ALL_USERS
+            Calls.ADD_FOR_ALL_USERS,
+            Calls.PREFERRED_DISPLAY_NAME
     };
 
     static final String[] MINIMAL_PROJECTION = new String[] { Calls._ID };
@@ -265,6 +266,7 @@ public class CallLogProvider extends ContentProvider {
         sCallsProjectionMap.put(Calls.IS_BUSINESS_CALL, Calls.IS_BUSINESS_CALL);
         sCallsProjectionMap.put(Calls.ASSERTED_DISPLAY_NAME, Calls.ASSERTED_DISPLAY_NAME);
         sCallsProjectionMap.put(Calls.UUID, Calls.UUID);
+        sCallsProjectionMap.put(Calls.PREFERRED_DISPLAY_NAME, Calls.PREFERRED_DISPLAY_NAME);
     }
 
     public static final ArrayMap<String, String> sVoIPCallsProjectionMap;

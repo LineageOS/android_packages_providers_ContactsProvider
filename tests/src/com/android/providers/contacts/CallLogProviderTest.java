@@ -85,7 +85,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
             Voicemails.DIRTY,
             Voicemails.DELETED};
     /** Total number of columns exposed by call_log provider. */
-    private static final int NUM_CALLLOG_FIELDS = 44;
+    private static final int NUM_CALLLOG_FIELDS = 45;
 
     private static final int MIN_MATCH = 7;
 
@@ -828,6 +828,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, (String) null);
                 values.put(Calls.PHONE_ACCOUNT_ID, (Long) null);
                 values.put(Calls.PRIORITY, Calls.PRIORITY_NORMAL);
+                values.put(Calls.PREFERRED_DISPLAY_NAME, (String) null);
                 break;
             case 1:
                 values.put(Calls.NUMBER, "654321");
@@ -840,6 +841,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, (String) null);
                 values.put(Calls.PHONE_ACCOUNT_ID, (Long) null);
                 values.put(Calls.PRIORITY, Calls.PRIORITY_NORMAL);
+                values.put(Calls.PREFERRED_DISPLAY_NAME, (String) null);
                 break;
             case 2:
                 values.put(Calls.NUMBER, "123456");
@@ -852,6 +854,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, (String) null);
                 values.put(Calls.PHONE_ACCOUNT_ID, (Long) null);
                 values.put(Calls.PRIORITY, Calls.PRIORITY_URGENT);
+                values.put(Calls.PREFERRED_DISPLAY_NAME, (String) null);
                 break;
         }
         return values;
