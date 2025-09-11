@@ -25,6 +25,7 @@ import static com.android.providers.contacts.flags.Flags.cp2SyncSearchIndexFlag;
 import static com.android.providers.contacts.flags.Flags.disableCp2AccountMoveFlag;
 import static com.android.providers.contacts.flags.Flags.insertAccountLogging;
 import static com.android.providers.contacts.flags.Flags.logCallMethod;
+import static com.android.providers.contacts.flags.Flags.restrictPiiDataUriColumns;
 import static com.android.providers.contacts.util.PhoneAccountHandleMigrationUtils.TELEPHONY_COMPONENT_NAME;
 
 import android.accounts.Account;
@@ -11050,7 +11051,7 @@ public class ContactsProvider2 extends AbstractContactsProvider
                     android.Manifest.permission.LOG_COMPAT_CHANGE
             })
     private boolean isDataProjectionRestricted() {
-        return CompatChanges.isChangeEnabled(ChangeIds.RESTRICT_DATA_URI_COLUMNS,
-                Binder.getCallingUid());
+        return restrictPiiDataUriColumns() && CompatChanges
+                .isChangeEnabled(ChangeIds.RESTRICT_DATA_URI_COLUMNS, Binder.getCallingUid());
     }
 }

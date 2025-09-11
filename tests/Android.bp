@@ -58,6 +58,10 @@ test_module_config {
             name: "feature-flags:flag-value",
             value: "contacts/com.android.providers.contacts.flags.insert_account_logging=true",
         },
+        {
+            name: "feature-flags:flag-value",
+            value: "profile_experiences/com.android.providers.contacts.flags.restrict_pii_data_uri_columns=true",
+        },
     ],
 }
 
@@ -80,6 +84,10 @@ test_module_config {
         {
             name: "feature-flags:flag-value",
             value: "contacts/com.android.providers.contacts.flags.insert_account_logging=false",
+        },
+        {
+            name: "feature-flags:flag-value",
+            value: "profile_experiences/com.android.providers.contacts.flags.restrict_pii_data_uri_columns=false",
         },
     ],
 }
