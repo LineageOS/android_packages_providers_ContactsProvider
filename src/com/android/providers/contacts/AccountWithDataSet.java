@@ -18,7 +18,6 @@ package com.android.providers.contacts;
 
 import android.accounts.Account;
 import android.content.res.Resources;
-import android.database.DatabaseUtils;
 import android.provider.ContactsContract.SimAccount;
 import android.text.TextUtils;
 
@@ -131,15 +130,25 @@ public class AccountWithDataSet {
      * will already have valid SIM accounts so only name and type need to be compared.
      */
     public boolean inSimAccounts(List<SimAccount> simAccountList) {
+        return findMatchingSimAccount(simAccountList) != null;
+    }
+
+    /**
+     * @return the {@link SimAccount} with a matching account name and type
+     * in the passed list.
+     * The list should be obtained from {@link ContactsDatabaseHelper#getAllSimAccounts()} so it
+     * will already have valid SIM accounts so only name and type need to be compared.
+     */
+    public SimAccount findMatchingSimAccount(List<SimAccount> simAccountList) {
         // Note we don't want to create a new SimAccount object from this instance, as this method
         // does not need to know about the SIM slot or the EF type. It only needs to know whether
         // the name and type match since the passed list will only contain valid SIM accounts.
         for (SimAccount simAccount : simAccountList) {
             if (Objects.equal(simAccount.getAccountName(), getAccountName())
                     && Objects.equal(simAccount.getAccountType(), getAccountType())) {
-                return true;
+                return simAccount;
             }
         }
-        return false;
+        return null;
     }
 }

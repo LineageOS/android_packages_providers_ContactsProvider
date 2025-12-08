@@ -24,12 +24,15 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.when;
 
 import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.RawContacts;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
 
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Before;
@@ -56,7 +59,9 @@ public class AccountResolverTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        mAccountResolver = new AccountResolver(mDbHelper, mDefaultAccountManager);
+        Context context = ApplicationProvider.getApplicationContext();
+        mAccountResolver = new AccountResolver(mDbHelper, mDefaultAccountManager,
+                AccountManager.get(context));
 
         when(mDbHelper.getAllSimAccounts()).thenReturn(List.of(new ContactsContract.SimAccount(
                 SIM_ACCOUNT_1.name, SIM_ACCOUNT_1.type, 1, SDN_EF_TYPE
@@ -634,8 +639,7 @@ public class AccountResolverTest {
     }
 
     @Test
-    public void
-            testResolveAccountWithDataSet_defaultAccountIsCloud_simWriteOnCloudDcaBypassDisabled() {
+    public void testResolveAccountWithDataSet_defaultAccountIsCloud_simWriteOnCloudDcaBypassDisabled() {
         Uri uri = Uri.parse("content://com.android.contacts/raw_contacts")
                 .buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, SIM_ACCOUNT_1.name)
@@ -658,8 +662,7 @@ public class AccountResolverTest {
     }
 
     @Test
-    public void
-            testResolveAccountWithDataSet_defaultAccountIsCloud_simWriteOnCloudDcaBypassEnabled() {
+    public void testResolveAccountWithDataSet_defaultAccountIsCloud_simWriteOnCloudDcaBypassEnabled() {
         Uri uri = Uri.parse("content://com.android.contacts/raw_contacts")
                 .buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, SIM_ACCOUNT_1.name)
@@ -859,6 +862,143 @@ public class AccountResolverTest {
         assertEquals(
                 "Cannot add contacts to local or SIM accounts when default account is set to cloud",
                 exception.getMessage());
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultNotSpecifiedAndApplyDefaultAccountTrue_returnsDefaultAccount() {
+        AccountWithDataSet resolved = mAccountResolver.resolveAccountWithDataSet(
+                new InsertAccountValidator.ValidationResultWithDetails(
+                        InsertAccountValidator.ValidationResult.ACCOUNT_NOT_SPECIFIED, null,
+                        DefaultAccountAndState.ofCloud(new Account("account_name", "account_type")),
+                        true, null, null), true, true);
+
+
+        assertEquals(new AccountWithDataSet("account_name", "account_type", null), resolved);
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultPass_returnsRequestedAccount() {
+        AccountWithDataSet resolved = mAccountResolver.resolveAccountWithDataSet(
+                new InsertAccountValidator.ValidationResultWithDetails(
+                        InsertAccountValidator.ValidationResult.PASS,
+                        new AccountWithDataSet("requested_name", "requested_type", null),
+                        DefaultAccountAndState.ofCloud(new Account("dca_name", "dca_type")),
+                        true, null, null), true, true);
+
+        assertEquals(new AccountWithDataSet("requested_name", "requested_type", null), resolved);
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultAccountNotSpecifiedAndApplyDefaultAccountFalse_returnsNull() {
+        AccountWithDataSet resolved = mAccountResolver.resolveAccountWithDataSet(
+                new InsertAccountValidator.ValidationResultWithDetails(
+                        InsertAccountValidator.ValidationResult.ACCOUNT_NOT_SPECIFIED, null,
+                        DefaultAccountAndState.ofCloud(new Account("account_name", "account_type")),
+                        true, null, null), false, true);
+
+        assertNull(resolved);
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultAccountNotSpecifiedAndDefaultAccountNotSet_returnsNull() {
+        AccountWithDataSet resolved = mAccountResolver.resolveAccountWithDataSet(
+                new InsertAccountValidator.ValidationResultWithDetails(
+                        InsertAccountValidator.ValidationResult.ACCOUNT_NOT_SPECIFIED, null,
+                        DefaultAccountAndState.ofNotSet(),
+                        true, null, null), true, true);
+
+        assertNull(resolved);
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultAccountNotSpecifiedAndDefaultAccountLocal_returnsNull() {
+        AccountWithDataSet resolved = mAccountResolver.resolveAccountWithDataSet(
+                new InsertAccountValidator.ValidationResultWithDetails(
+                        InsertAccountValidator.ValidationResult.ACCOUNT_NOT_SPECIFIED, null,
+                        DefaultAccountAndState.ofLocal(),
+                        true, null, null), true, true);
+
+        assertNull(resolved);
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultFailureInvalidAccountArgs_throwsException() {
+        when(mDbHelper.exceptionMessage(
+                "Must specify both or neither of ACCOUNT_NAME and ACCOUNT_TYPE",
+                RawContacts.CONTENT_URI))
+                .thenReturn("Test Exception Message");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            mAccountResolver.resolveAccountWithDataSet(
+                    new InsertAccountValidator.ValidationResultWithDetails(
+                            InsertAccountValidator.ValidationResult.FAILURE_INVALID_ACCOUNT_ARGS,
+                            null,
+                            DefaultAccountAndState.ofNotSet(),
+                            true, null, RawContacts.CONTENT_URI), true, true);
+        });
+
+        assertEquals("Test Exception Message", exception.getMessage());
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultFailureAccountNotMatching_throwsException() {
+        when(mDbHelper.exceptionMessage(
+                "When both specified, ACCOUNT_NAME and ACCOUNT_TYPE must match",
+                RawContacts.CONTENT_URI))
+                .thenReturn("Test Exception Message");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            mAccountResolver.resolveAccountWithDataSet(
+                    new InsertAccountValidator.ValidationResultWithDetails(
+                            InsertAccountValidator.ValidationResult.FAILURE_ACCOUNT_NOT_MATCHING,
+                            null,
+                            DefaultAccountAndState.ofNotSet(),
+                            true, null, RawContacts.CONTENT_URI), true, true);
+        });
+
+        assertEquals("Test Exception Message", exception.getMessage());
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultFailureDefaultAccountCloudRestriction_throwsException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            mAccountResolver.resolveAccountWithDataSet(
+                    new InsertAccountValidator.ValidationResultWithDetails(
+                            InsertAccountValidator.ValidationResult.FAILURE_DEFAULT_ACCOUNT_CLOUD_RESTRICTION,
+                            null,
+                            DefaultAccountAndState.ofCloud(new Account("dca_name", "dca_type")),
+                            true, null, RawContacts.CONTENT_URI), true, true);
+        });
+
+        assertEquals(
+                "Cannot add contacts to local or SIM accounts when default account is set to cloud",
+                exception.getMessage());
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultFailureDefaultAccountCloudRestrictionButSkipAccountValidation_noException() {
+        AccountWithDataSet resolved = mAccountResolver.resolveAccountWithDataSet(
+                new InsertAccountValidator.ValidationResultWithDetails(
+                        InsertAccountValidator.ValidationResult.FAILURE_DEFAULT_ACCOUNT_CLOUD_RESTRICTION,
+                        AccountWithDataSet.LOCAL,
+                        DefaultAccountAndState.ofCloud(new Account("dca_name", "dca_type")),
+                        true, null, RawContacts.CONTENT_URI), true, false);
+
+        // Expect null because the original request was for a local, which is effectively
+        // treated as a local account (null AccountWithDataSet) when validation is skipped.
+        assertNull(resolved);
+    }
+
+    @Test
+    public void testResolveAccountWithDataSet_validationResultFailureAccountNotFound_returnsRequestedAccount() {
+        AccountWithDataSet resolved = mAccountResolver.resolveAccountWithDataSet(
+                new InsertAccountValidator.ValidationResultWithDetails(
+                        InsertAccountValidator.ValidationResult.FAILURE_ACCOUNT_NOT_FOUND,
+                        new AccountWithDataSet("account_name", "account_type", null),
+                        DefaultAccountAndState.ofNotSet(),
+                        false, null, null), true, true);
+
+        assertEquals(new AccountWithDataSet("account_name", "account_type", null), resolved);
     }
 
 

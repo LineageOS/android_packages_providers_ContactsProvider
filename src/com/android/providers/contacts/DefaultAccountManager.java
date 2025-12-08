@@ -15,12 +15,15 @@
  */
 package com.android.providers.contacts;
 
+import static com.android.providers.contacts.flags.Flags.enableDynamicEligibleDefaultAccount;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.res.Resources;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
+import android.provider.ContactsContract.Settings.AccountAttributes;
 import android.util.Log;
 
 import com.android.internal.R;
@@ -45,22 +48,27 @@ public class DefaultAccountManager {
     private final ContactsDatabaseHelper mDbHelper;
     private final SyncSettingsHelper mSyncSettingsHelper;
     private final AccountManager mAccountManager;
+    private final AccountAttributesManager mAccountAttributesManager;
 
-    DefaultAccountManager(Context context, ContactsDatabaseHelper dbHelper) {
-        this(context, dbHelper, new SyncSettingsHelper(), AccountManager.get(context));
+    DefaultAccountManager(Context context, ContactsDatabaseHelper dbHelper,
+            AccountAttributesManager accountAttributesManager) {
+        this(context, dbHelper, new SyncSettingsHelper(), AccountManager.get(context),
+                accountAttributesManager);
     }
 
     // Keep it in proguard for testing: once it's used in production code, remove this annotation.
     @NeededForTesting
     DefaultAccountManager(Context context, ContactsDatabaseHelper dbHelper,
-            SyncSettingsHelper syncSettingsHelper, AccountManager accountManager) {
+            SyncSettingsHelper syncSettingsHelper, AccountManager accountManager,
+            AccountAttributesManager accountAttributesManager) {
         mContext = context;
         mDbHelper = dbHelper;
         mSyncSettingsHelper = syncSettingsHelper;
         mAccountManager = accountManager;
+        mAccountAttributesManager = accountAttributesManager;
     }
 
-    private static synchronized Set<String> getEligibleSystemAccountTypes(Context context) {
+    private static synchronized Set<String> getPreconfiguredSystemAccountTypes(Context context) {
         if (sEligibleSystemCloudAccountTypes == null) {
             sEligibleSystemCloudAccountTypes = new HashSet<>();
 
@@ -115,13 +123,15 @@ public class DefaultAccountManager {
 
     /**
      * Get a list of cloud accounts that is eligible to set as the default account.
+     *
      * @return the list of cloud accounts.
      */
     public List<Account> getEligibleCloudAccounts() {
         List<Account> eligibleAccounts = new ArrayList<>();
-        Account[] accounts = mAccountManager.getAccounts();
-        for (Account account : accounts) {
-            if (isEligibleSystemCloudAccount(account)) {
+        Account[] systemAccounts = mAccountManager.getAccounts();
+        for (Account account : systemAccounts) {
+            if (isEligibleSystemCloudAccount(account, systemAccounts)
+                    && !mSyncSettingsHelper.isSyncOff(account)) {
                 eligibleAccounts.add(account);
             }
         }
@@ -197,9 +207,40 @@ public class DefaultAccountManager {
         return false;
     }
 
-    private boolean isEligibleSystemCloudAccount(Account account) {
-        return account != null && getEligibleSystemAccountTypes(mContext).contains(account.type)
-                && !mSyncSettingsHelper.isSyncOff(account);
+    private boolean isEligibleSystemCloudAccount(Account account, Account[] systemAccounts) {
+        if (account == null) {
+            return false;
+        }
+
+        return getPreconfiguredSystemAccountTypes(mContext).contains(account.type)
+                || isEligibleCloudAccountByAttributes(account, systemAccounts);
+    }
+
+    private boolean isEligibleCloudAccountByAttributes(Account account, Account[] systemAccounts) {
+        if (!enableDynamicEligibleDefaultAccount()) {
+            return false;
+        }
+
+        if (!android.provider.Flags.newAccountAttributesApiEnabled()) {
+            Log.w(TAG, "Unable to get the account attribute as account attributes API is disabled");
+            return false;
+        }
+
+        AccountWithDataSet accountWithDataSet = new AccountWithDataSet(account.name, account.type,
+                null);
+        Long accountAttributes = mAccountAttributesManager.getAccountAttributes(accountWithDataSet,
+                systemAccounts);
+        if (accountAttributes == null) {
+            Log.w(TAG, "Unable to get the account attribute");
+            return false;
+        }
+
+        // An eligible cloud account should support syncing up contacts, and the account type should
+        // not contain contacts with custom data type.
+        return ((accountAttributes & AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD) != 0)
+                && ((accountAttributes & AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC) != 0)
+                && ((accountAttributes & AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED)
+                == 0);
     }
 
     private DefaultAccountAndState getDefaultAccountFromDb() {

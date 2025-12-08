@@ -27,6 +27,7 @@ import android.os.Looper;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.ProviderStatus;
 import android.provider.ContactsContract.RawContacts;
+import android.provider.ContactsContract.Settings;
 import android.test.MoreAsserts;
 
 import androidx.test.filters.LargeTest;
@@ -568,6 +569,101 @@ public class ContactsDatabaseHelperTest extends BaseContactsProvider2Test {
         }, null, null, null, null, null)) {
             assertEquals(3, cursor.getCount());
         }
+    }
+
+    // Test method for get and update account attributes
+    public void testSetAndGetAccountAttributesInfo() {
+        final String accountName1 = "testAccount1";
+        final String accountType1 = "testType1";
+        final String dataSet1 = "testDataSet1";
+        final long attributes1 = Settings.AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD;
+
+        final String accountName2 = "testAccount2";
+        final String accountType2 = "testType2";
+        final String dataSet2 = null; // No dataSet
+        final long attributes2 =
+                Settings.AccountAttributes.ATTRIBUTE_DATA_TYPE_CUSTOM_DECLARED;
+
+        // Test 1: Set attributes for an account with owner override (isAppOverride = true)
+        mDbHelper.setAccountAttributes(accountName1, accountType1, dataSet1, attributes1, true);
+        AccountAttributesInfo info1 = mDbHelper.getAccountAttributesInfo(
+                accountName1, accountType1, dataSet1);
+
+        assertNotNull("AccountAttributesInfo should not be null for an existing account", info1);
+        assertEquals("Attributes should match the value set", attributes1, info1.attributes);
+        assertTrue("hasOwnerSetAttributes should be true when isAppOverride is true",
+                info1.hasOwnerSetAttributes);
+
+        // Test 2: Set attributes for another account without owner override (isAppOverride = false)
+        mDbHelper.setAccountAttributes(accountName2, accountType2, dataSet2, attributes2, false);
+        AccountAttributesInfo info2 = mDbHelper.getAccountAttributesInfo(
+                accountName2, accountType2, dataSet2);
+
+        assertNotNull("AccountAttributesInfo should not be null for an existing account", info2);
+        assertEquals("Attributes should match the value set", attributes2, info2.attributes);
+        assertFalse("hasOwnerSetAttributes should be false when isAppOverride is false",
+                info2.hasOwnerSetAttributes);
+
+        // Test 3: Update an existing account's attributes
+        final long updatedAttributes1 =
+                Settings.AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC;
+        mDbHelper.setAccountAttributes(accountName1, accountType1, dataSet1, updatedAttributes1,
+                true);
+        AccountAttributesInfo reFetchedInfo1 = mDbHelper.getAccountAttributesInfo(
+                accountName1, accountType1, dataSet1);
+
+        assertNotNull(reFetchedInfo1);
+        assertEquals("Attributes should reflect the updated value",
+                updatedAttributes1, reFetchedInfo1.attributes);
+        assertTrue("hasOwnerSetAttributes should remain true after update",
+                reFetchedInfo1.hasOwnerSetAttributes);
+
+        // Test 4: Invalid arguments for setAccountAttributes should throw exceptions
+        try {
+            mDbHelper.setAccountAttributes("someName", null, null, attributes1, true);
+            fail("Setting attributes with null accountType should fail.");
+        } catch (IllegalArgumentException e) {
+            // Expected exception
+        }
+
+        try {
+            mDbHelper.setAccountAttributes(null, "someType", "someDataSet", attributes1, true);
+            fail("Setting attributes with null accountName and non-null dataSet should fail.");
+        } catch (IllegalArgumentException e) {
+            // Expected exception
+        }
+
+        // Verify the attributes for account1 remain unchanged after the failed attempts
+        AccountAttributesInfo finalInfo = mDbHelper.getAccountAttributesInfo(
+                accountName1, accountType1, dataSet1);
+        assertEquals("Attributes should not change after a failed set operation",
+                updatedAttributes1, finalInfo.attributes);
+
+
+        // Test 5: Get attributes for a non-existent account
+        AccountAttributesInfo nonExistentInfo = mDbHelper.getAccountAttributesInfo(
+                "nonExistent", "nonExistent", null);
+        assertNull("getAccountAttributesInfo should return null for a non-existent account",
+                nonExistentInfo);
+    }
+
+    public void testGetAccountAttributesInfo_whenAttributesColumnIsNull_returnsNull() {
+        // Arrange: Manually insert an account without setting the attributes column,
+        // which will leave it as NULL.
+        final String accountName = "testAccount";
+        final String accountType = "testType";
+
+        ContentValues values = new ContentValues();
+        values.put(ContactsDatabaseHelper.AccountsColumns.ACCOUNT_NAME, accountName);
+        values.put(ContactsDatabaseHelper.AccountsColumns.ACCOUNT_TYPE, accountType);
+        mDb.insert(Tables.ACCOUNTS, null, values);
+
+        // Act: Get the info for the newly created account.
+        AccountAttributesInfo info = mDbHelper.getAccountAttributesInfo(accountName, accountType,
+                null);
+
+        // Assert: The method should return a null info object with default values.
+        assertNull("getAccountAttributesInfo should return null", info);
     }
 
     void createRawContact(AccountWithDataSet account) {

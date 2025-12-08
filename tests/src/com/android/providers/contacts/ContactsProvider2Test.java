@@ -23,6 +23,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
 import android.accounts.Account;
+import android.accounts.AuthenticatorDescription;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentProviderOperation;
@@ -41,6 +42,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -74,6 +76,7 @@ import android.provider.ContactsContract.RawContacts;
 import android.provider.ContactsContract.RawContactsEntity;
 import android.provider.ContactsContract.SearchSnippets;
 import android.provider.ContactsContract.Settings;
+import android.provider.ContactsContract.Settings.AccountAttributes;
 import android.provider.ContactsContract.StatusUpdates;
 import android.provider.ContactsContract.StreamItemPhotos;
 import android.provider.ContactsContract.StreamItems;
@@ -117,6 +120,7 @@ import com.google.android.collect.Lists;
 import com.google.android.collect.Sets;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -668,6 +672,7 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_RESTRICT_PII_DATA_URI_COLUMNS)
     public void testDataProjection() {
         assertProjection(Data.CONTENT_URI, new String[]{
                 Data._ID,
@@ -714,6 +719,95 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
                 RawContacts.ACCOUNT_TYPE,
                 RawContacts.DATA_SET,
                 RawContacts.ACCOUNT_TYPE_AND_DATA_SET,
+                RawContacts.SOURCE_ID,
+                RawContacts.BACKUP_ID,
+                RawContacts.VERSION,
+                RawContacts.DIRTY,
+                RawContacts.RAW_CONTACT_IS_USER_PROFILE,
+                Contacts._ID,
+                Contacts.DISPLAY_NAME_PRIMARY,
+                Contacts.DISPLAY_NAME_ALTERNATIVE,
+                Contacts.DISPLAY_NAME_SOURCE,
+                Contacts.PHONETIC_NAME,
+                Contacts.PHONETIC_NAME_STYLE,
+                Contacts.SORT_KEY_PRIMARY,
+                Contacts.SORT_KEY_ALTERNATIVE,
+                ContactsColumns.PHONEBOOK_LABEL_PRIMARY,
+                ContactsColumns.PHONEBOOK_BUCKET_PRIMARY,
+                ContactsColumns.PHONEBOOK_LABEL_ALTERNATIVE,
+                ContactsColumns.PHONEBOOK_BUCKET_ALTERNATIVE,
+                Contacts.LAST_TIME_CONTACTED,
+                Contacts.TIMES_CONTACTED,
+                Contacts.STARRED,
+                Contacts.PINNED,
+                Contacts.IN_DEFAULT_DIRECTORY,
+                Contacts.IN_VISIBLE_GROUP,
+                Contacts.PHOTO_ID,
+                Contacts.PHOTO_FILE_ID,
+                Contacts.PHOTO_URI,
+                Contacts.PHOTO_THUMBNAIL_URI,
+                Contacts.CUSTOM_RINGTONE,
+                Contacts.SEND_TO_VOICEMAIL,
+                Contacts.LOOKUP_KEY,
+                Contacts.NAME_RAW_CONTACT_ID,
+                Contacts.HAS_PHONE_NUMBER,
+                Contacts.CONTACT_PRESENCE,
+                Contacts.CONTACT_CHAT_CAPABILITY,
+                Contacts.CONTACT_STATUS,
+                Contacts.CONTACT_STATUS_TIMESTAMP,
+                Contacts.CONTACT_STATUS_RES_PACKAGE,
+                Contacts.CONTACT_STATUS_LABEL,
+                Contacts.CONTACT_STATUS_ICON,
+                Contacts.CONTACT_LAST_UPDATED_TIMESTAMP,
+                GroupMembership.GROUP_SOURCE_ID,
+        });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_PII_DATA_URI_COLUMNS)
+    public void testDataProjectionRestricted() {
+        assertProjection(Data.CONTENT_URI, new String[]{
+                Data._ID,
+                Data.RAW_CONTACT_ID,
+                Data.HASH_ID,
+                Data.DATA_VERSION,
+                Data.IS_PRIMARY,
+                Data.IS_SUPER_PRIMARY,
+                Data.RES_PACKAGE,
+                Data.MIMETYPE,
+                Data.DATA1,
+                Data.DATA2,
+                Data.DATA3,
+                Data.DATA4,
+                Data.DATA5,
+                Data.DATA6,
+                Data.DATA7,
+                Data.DATA8,
+                Data.DATA9,
+                Data.DATA10,
+                Data.DATA11,
+                Data.DATA12,
+                Data.DATA13,
+                Data.DATA14,
+                Data.DATA15,
+                Data.CARRIER_PRESENCE,
+                Data.PREFERRED_PHONE_ACCOUNT_COMPONENT_NAME,
+                Data.PREFERRED_PHONE_ACCOUNT_ID,
+                Data.SYNC1,
+                Data.SYNC2,
+                Data.SYNC3,
+                Data.SYNC4,
+                Data.CONTACT_ID,
+                Data.PRESENCE,
+                Data.CHAT_CAPABILITY,
+                Data.STATUS,
+                Data.STATUS_TIMESTAMP,
+                Data.STATUS_RES_PACKAGE,
+                Data.STATUS_LABEL,
+                Data.STATUS_ICON,
+                Data.TIMES_USED,
+                Data.LAST_TIME_USED,
+                RawContacts.DATA_SET,
                 RawContacts.SOURCE_ID,
                 RawContacts.BACKUP_ID,
                 RawContacts.VERSION,
@@ -9854,12 +9948,136 @@ public class ContactsProvider2Test extends BaseContactsProvider2Test {
         // Set NULL account as default account.
         bundle = new Bundle();
         mResolver.call(ContactsContract.AUTHORITY_URI, Settings.SET_DEFAULT_ACCOUNT_METHOD,
-            null, bundle);
+                null, bundle);
 
         response = mResolver.call(ContactsContract.AUTHORITY_URI,
                 Settings.QUERY_DEFAULT_ACCOUNT_METHOD, null, null);
         account = response.getParcelable(Settings.KEY_DEFAULT_ACCOUNT);
         assertNull(account);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED)
+    public void testAccountAttributesSetAndQuery_flagDisabled() {
+        mActor.setAccounts(new Account[]{mAccount});
+        Assert.assertThrows(UnsupportedOperationException.class,
+                () -> queryAccountAttributes(mAccount.name, mAccount.type, null));
+
+        Assert.assertThrows(UnsupportedOperationException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null, 0L));
+        Assert.assertThrows(UnsupportedOperationException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED)
+    public void testAccountAttributesSetByNonAuthenticators() {
+        mActor.setAccounts(new Account[]{mAccount});
+
+        // Unknown package is the authenticator of mAccount.type.
+        mActor.setAuthenticators(new AuthenticatorDescription[]{
+                new AuthenticatorDescription(mAccount.type, "unknown.package", 0, 0, 0, 0)});
+
+        // Query is OKay.
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Setting account attributes should fail with SecurityException.
+        Assert.assertThrows(SecurityException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                                | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
+
+        // Account attributes is unchanged
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // No authenticators.
+        mActor.setAuthenticators(new AuthenticatorDescription[0]);
+
+        // Query is OKay.
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Setting account attributes should fail with SecurityException.
+        Assert.assertThrows(SecurityException.class,
+                () -> updateAccountAttributes(mAccount.name, mAccount.type, null,
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                                | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.provider.Flags.FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED)
+    public void testAccountAttributesSetAndQuery() {
+        mActor.setAccounts(new Account[]{mAccount});
+        mActor.setAuthenticators(new AuthenticatorDescription[]{
+                new AuthenticatorDescription(mAccount.type, mContext.getPackageName(), 0, 0, 0,
+                        0)});
+
+        // Test initial query returns default.
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Set new attributes and verify.
+        updateAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC);
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC);
+
+        // Reset the attributes.
+        resetAccountAttributes(mAccount.name, mAccount.type, null);
+
+        // Verify attributes have reverted to the default.
+        queryAndAssertAccountAttributes(mAccount.name, mAccount.type, null,
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+    }
+
+    private void updateAccountAttributes(String accountName, String accountType, String dataSet,
+            long newCapabilities) {
+        Bundle setBundle = new Bundle();
+        setBundle.putString(Settings.ACCOUNT_NAME, accountName);
+        setBundle.putString(Settings.ACCOUNT_TYPE, accountType);
+        if (dataSet != null) {
+            setBundle.putString(Settings.DATA_SET, dataSet);
+        }
+        setBundle.putLong(Settings.KEY_ACCOUNT_ATTRIBUTES, newCapabilities);
+        mResolver.call(ContactsContract.AUTHORITY_URI,
+                Settings.SET_ACCOUNT_ATTRIBUTES_METHOD,
+                null, setBundle);
+    }
+
+    private void resetAccountAttributes(String accountName, String accountType, String dataSet) {
+        Bundle resetBundle = new Bundle();
+        resetBundle.putString(Settings.ACCOUNT_NAME, accountName);
+        resetBundle.putString(Settings.ACCOUNT_TYPE, accountType);
+        if (dataSet != null) {
+            resetBundle.putString(Settings.DATA_SET, dataSet);
+        }
+        mResolver.call(ContactsContract.AUTHORITY_URI,
+                Settings.RESET_ACCOUNT_ATTRIBUTES_METHOD,
+                null, resetBundle);
+    }
+
+    private void queryAndAssertAccountAttributes(String accountName, String accountType,
+            String dataSet, long attributes) {
+        assertEquals(attributes, queryAccountAttributes(accountName, accountType, dataSet));
+    }
+
+    private long queryAccountAttributes(String accountName, String accountType, String dataSet) {
+        Bundle queryBundle = new Bundle();
+        queryBundle.putString(Settings.ACCOUNT_NAME, accountName);
+        queryBundle.putString(Settings.ACCOUNT_TYPE, accountType);
+
+        if (dataSet != null) {
+            queryBundle.putString(Settings.DATA_SET, dataSet);
+        }
+
+        Bundle response = mResolver.call(ContactsContract.AUTHORITY_URI,
+                Settings.GET_ACCOUNT_ATTRIBUTES_METHOD, null, queryBundle);
+        return response.getLong(Settings.KEY_ACCOUNT_ATTRIBUTES);
     }
 
     @Test

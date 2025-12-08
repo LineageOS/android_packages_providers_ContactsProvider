@@ -27,6 +27,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.accounts.AuthenticatorDescription;
 import android.accounts.AuthenticatorException;
 import android.accounts.OnAccountsUpdateListener;
 import android.accounts.OperationCanceledException;
@@ -115,6 +116,8 @@ public class ContactsActor {
 
     private Account[] mAccounts = new Account[0];
 
+    private AuthenticatorDescription[] mAuthenticatorTypes = new AuthenticatorDescription[0];
+
     private Set<String> mGrantedPermissions = Sets.newHashSet();
     private final Set<Uri> mGrantedUriPermissions = Sets.newHashSet();
     private boolean mHasCarrierPrivileges;
@@ -148,6 +151,11 @@ public class ContactsActor {
         @Override
         public Account[] getAccounts() {
             return mAccounts;
+        }
+
+        @Override
+        public AuthenticatorDescription[] getAuthenticatorTypes() {
+            return mAuthenticatorTypes;
         }
 
         @Override
@@ -847,6 +855,10 @@ public class ContactsActor {
 
     public void setAccounts(Account[] accounts) {
         mAccounts = accounts;
+    }
+
+    public void setAuthenticators(AuthenticatorDescription[] authenticators) {
+        mAuthenticatorTypes = authenticators;
     }
 
     /**

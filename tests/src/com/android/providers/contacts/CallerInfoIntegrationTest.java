@@ -20,11 +20,11 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.net.Uri;
 import android.provider.ContactsContract.RawContacts;
-import android.telecom.CallerInfo;
 
 import androidx.test.filters.MediumTest;
 
 import com.android.providers.contacts.testutil.DataUtil;
+import com.android.server.telecom.util.CallerInfo;
 
 /**
  * Integration test for {@link CallerInfo} and {@link ContactsProvider2}.

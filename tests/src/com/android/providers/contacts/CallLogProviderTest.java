@@ -40,7 +40,6 @@ import android.provider.CallLog.Calls;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.VoicemailContract.Voicemails;
-import android.telecom.CallerInfo;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telephony.SubscriptionInfo;
@@ -51,6 +50,8 @@ import com.android.providers.contacts.testutil.CommonDatabaseUtils;
 import com.android.providers.contacts.util.ContactsPermissions;
 import com.android.providers.contacts.util.FileUtilities;
 import com.android.providers.contacts.util.PhoneAccountHandleMigrationUtils;
+import com.android.server.telecom.util.CallLogUtils;
+import com.android.server.telecom.util.CallerInfo;
 
 import org.junit.Assert;
 
@@ -84,7 +85,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
             Voicemails.DIRTY,
             Voicemails.DELETED};
     /** Total number of columns exposed by call_log provider. */
-    private static final int NUM_CALLLOG_FIELDS = 43;
+    private static final int NUM_CALLLOG_FIELDS = 45;
 
     private static final int MIN_MATCH = 7;
 
@@ -447,7 +448,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
 
         // Allow self-calls in order to add the call
         ContactsPermissions.ALLOW_SELF_CALL = true;
-        Uri uri = Calls.addCall(ci, getMockContext(), "1-800-263-7643",
+        Uri uri = CallLogUtils.addCall(ci, getMockContext(), "1-800-263-7643",
                 Calls.PRESENTATION_ALLOWED, Calls.OUTGOING_TYPE, 0, subscription, 2000,
                 40, null, MISSED_REASON_NOT_MISSED, 0);
         ContactsPermissions.ALLOW_SELF_CALL = false;
@@ -749,6 +750,19 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 BACKGROUND_TASK_MIGRATE_PHONE_ACCOUNT_HANDLES, handle);
     }
 
+    // Test to check that the voip call logs are filtered based on the parameter key in the uris
+    public void testFilterVoipContentUris() {
+        // Insert one voip call and two regular call record.
+        insertVoipCallRecord();
+        insertCallRecord();
+        insertCallRecord();
+
+        // With the default uri, only 2 call entries should be returned.
+        // With the voip uri all 3 should be returned.
+        assertEquals(2, getCount(Calls.CONTENT_URI, null, null));
+        assertEquals(3, getCount(Calls.CONTENT_URI_WITH_VOIP_CALLS, null, null));
+    }
+
     private ContentValues getDefaultValues(int callType) {
         ContentValues values = new ContentValues();
         values.put(Calls.TYPE, callType);
@@ -764,12 +778,23 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
         return getDefaultValues(Calls.INCOMING_TYPE);
     }
 
+    private ContentValues getDefaultVoipCallValues() {
+        ContentValues values = getDefaultValues(Calls.OUTGOING_TYPE);
+        values.put(Calls.UUID, "testVoipUuid");
+        values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, "testVoipPkgCmptName");
+        return values;
+    }
+
     private ContentValues getDefaultVoicemailValues() {
         return getDefaultValues(Calls.VOICEMAIL_TYPE);
     }
 
     private Uri insertCallRecord() {
         return mResolver.insert(Calls.CONTENT_URI, getDefaultCallValues());
+    }
+
+    private Uri insertVoipCallRecord() {
+        return mResolver.insert(Calls.CONTENT_URI_WITH_VOIP_CALLS, getDefaultVoipCallValues());
     }
 
     private Uri insertVoicemailRecord() {
@@ -803,6 +828,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, (String) null);
                 values.put(Calls.PHONE_ACCOUNT_ID, (Long) null);
                 values.put(Calls.PRIORITY, Calls.PRIORITY_NORMAL);
+                values.put(Calls.PREFERRED_DISPLAY_NAME, (String) null);
                 break;
             case 1:
                 values.put(Calls.NUMBER, "654321");
@@ -815,6 +841,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, (String) null);
                 values.put(Calls.PHONE_ACCOUNT_ID, (Long) null);
                 values.put(Calls.PRIORITY, Calls.PRIORITY_NORMAL);
+                values.put(Calls.PREFERRED_DISPLAY_NAME, (String) null);
                 break;
             case 2:
                 values.put(Calls.NUMBER, "123456");
@@ -827,6 +854,7 @@ public class CallLogProviderTest extends BaseContactsProvider2Test {
                 values.put(Calls.PHONE_ACCOUNT_COMPONENT_NAME, (String) null);
                 values.put(Calls.PHONE_ACCOUNT_ID, (Long) null);
                 values.put(Calls.PRIORITY, Calls.PRIORITY_URGENT);
+                values.put(Calls.PREFERRED_DISPLAY_NAME, (String) null);
                 break;
         }
         return values;
