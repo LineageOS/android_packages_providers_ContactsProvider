@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2de2e3a3_49d5e364",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 36888
+      },
+      "writtenOn": "2026-04-08T14:35:44Z",
+      "side": 1,
+      "message": "Please consider this fix ported from GrapheneOS. It aims to resolve work item #9912",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
