@@ -20,20 +20,15 @@ import static com.android.providers.contacts.flags.Flags.enableDynamicEligibleDe
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
-import android.content.res.Resources;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
 import android.provider.ContactsContract.Settings.AccountAttributes;
 import android.util.Log;
 
-import com.android.internal.R;
 import com.android.providers.contacts.util.NeededForTesting;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * A utility class to provide methods to load and set the default account.
@@ -41,8 +36,6 @@ import java.util.Set;
 @NeededForTesting
 public class DefaultAccountManager {
     private static final String TAG = "DefaultAccountManager";
-
-    private static HashSet<String> sEligibleSystemCloudAccountTypes = null;
 
     private final Context mContext;
     private final ContactsDatabaseHelper mDbHelper;
@@ -66,24 +59,6 @@ public class DefaultAccountManager {
         mSyncSettingsHelper = syncSettingsHelper;
         mAccountManager = accountManager;
         mAccountAttributesManager = accountAttributesManager;
-    }
-
-    private static synchronized Set<String> getPreconfiguredSystemAccountTypes(Context context) {
-        if (sEligibleSystemCloudAccountTypes == null) {
-            sEligibleSystemCloudAccountTypes = new HashSet<>();
-
-            Resources resources = Resources.getSystem();
-            String[] accountTypesArray =
-                    resources.getStringArray(R.array.config_rawContactsEligibleDefaultAccountTypes);
-
-            sEligibleSystemCloudAccountTypes.addAll(Arrays.asList(accountTypesArray));
-        }
-        return sEligibleSystemCloudAccountTypes;
-    }
-
-    @NeededForTesting
-    static synchronized void setEligibleSystemCloudAccountTypesForTesting(String[] accountTypes) {
-        sEligibleSystemCloudAccountTypes = new HashSet<>(Arrays.asList(accountTypes));
     }
 
     /**
@@ -208,12 +183,7 @@ public class DefaultAccountManager {
     }
 
     private boolean isEligibleSystemCloudAccount(Account account, Account[] systemAccounts) {
-        if (account == null) {
-            return false;
-        }
-
-        return getPreconfiguredSystemAccountTypes(mContext).contains(account.type)
-                || isEligibleCloudAccountByAttributes(account, systemAccounts);
+        return account != null;
     }
 
     private boolean isEligibleCloudAccountByAttributes(Account account, Account[] systemAccounts) {
