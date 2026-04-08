@@ -50,6 +50,23 @@
       "message": "And commit message is also wrong, doesn\u0027t match the original commit",
       "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "55b576e9_de9c3700",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 10067
+      },
+      "writtenOn": "2026-04-08T19:47:21Z",
+      "side": 1,
+      "message": "also we can\u0027t take changes from grapheneos.",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ]
 }
