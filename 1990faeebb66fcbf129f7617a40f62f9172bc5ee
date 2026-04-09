@@ -67,6 +67,59 @@
       "message": "also we can\u0027t take changes from grapheneos.",
       "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3f93b9fd_2819a5c3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 36888
+      },
+      "writtenOn": "2026-04-09T07:06:55Z",
+      "side": 1,
+      "message": "Regarding authorship and commit message: Do you think the original commit should have been incorporated via a cherry-pick instead? That would be the exact opposite of what Łukasz is pointing out.\n\nI’m afraid the suggestion about pre-filling isn’t feasible. After all, users can install any contact provider they like, and it should be possible to select any of these providers as the default. On stock Pixel OS, it\u0027s set to \"com.google\" (i.e. only a Google account can be set as default).",
+      "parentUuid": "f21d9a32_a6fcd6c0",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "910791ad_0e7b7264",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 36888
+      },
+      "writtenOn": "2026-04-09T07:06:55Z",
+      "side": 1,
+      "message": "The proposed changes adopt the approach outlined there, yes. But I don’t understand why that shouldn’t be allowed. Besides, it’s almost entirely a matter of removing code, so I find it even harder to understand why this is regarded as ‘taking changes’.\nI would like to understand how I can meet the requirements.",
+      "parentUuid": "55b576e9_de9c3700",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3e7a98bb_7a607f30",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 36888
+      },
+      "writtenOn": "2026-04-09T07:06:55Z",
+      "side": 1,
+      "message": "Thank you very much for reviewing the proposed changes. The aim is to resolve an annoying issue that affects all users and restricts their freedom to choose a default contact provider for their devices. From the user’s perspective, this is a step backwards in Android 16 compared to how things worked before.",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ]
 }
