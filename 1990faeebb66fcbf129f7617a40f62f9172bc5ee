@@ -137,6 +137,24 @@
       "message": "Better use this commit https://github.com/CalyxOS/vendor_calyx/commit/9076f7f8bec6f525a85eb9833b56697eb14a7770",
       "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "bb7c8b26_dce0c445",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 19979
+      },
+      "writtenOn": "2026-05-05T16:05:44Z",
+      "side": 1,
+      "message": "A bit late to the party, was already handled in MindTheGapps",
+      "parentUuid": "7c875f3c_65ec678c",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ]
 }
