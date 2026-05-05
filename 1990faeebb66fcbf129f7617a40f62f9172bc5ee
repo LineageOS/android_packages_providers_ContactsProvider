@@ -120,6 +120,23 @@
       "message": "Thank you very much for reviewing the proposed changes. The aim is to resolve an annoying issue that affects all users and restricts their freedom to choose a default contact provider for their devices. From the user’s perspective, this is a step backwards in Android 16 compared to how things worked before.",
       "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "7c875f3c_65ec678c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 33413
+      },
+      "writtenOn": "2026-05-05T16:02:57Z",
+      "side": 1,
+      "message": "Better use this commit https://github.com/CalyxOS/vendor_calyx/commit/9076f7f8bec6f525a85eb9833b56697eb14a7770",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ]
 }
