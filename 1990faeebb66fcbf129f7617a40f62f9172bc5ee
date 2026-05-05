@@ -155,6 +155,24 @@
       "parentUuid": "7c875f3c_65ec678c",
       "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "93fa7526_1ea7aaa3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 36888
+      },
+      "writtenOn": "2026-05-05T16:53:06Z",
+      "side": 1,
+      "message": "MindTheGapps has added Google to the overlay of `config_rawContactsEligibleDefaultAccountTypes` in\n https://gitlab.com/MindTheGapps/vendor_gapps/-/commit/e35b721ce0f1915829441db2ef8f43ccc72a3f74\nHowever, this does not allow for other account types and limits the user\u0027s freedom of choice.\n\nUnfortunately, I don\u0027t understand what kind of change would be acceptable to you to resolve the original issue.",
+      "parentUuid": "bb7c8b26_dce0c445",
+      "revId": "1990faeebb66fcbf129f7617a40f62f9172bc5ee",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ]
 }
