@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b20cf88a_189da13a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 37050
+      },
+      "writtenOn": "2026-05-16T00:46:17Z",
+      "side": 1,
+      "message": "I am no dev, so adding my voice regarding the code would be useless. But I\u0027ve been a long time user (since 2017) of LineageOs and I am considering switching off of it since the process of adding contacts has been very tedious for months now. This is not just a little bug or issue. It should have over 9000 priority. Losing contacts in your phone sucks and it\u0027s going to be happening to loads of users since the default saving method is just \"Device\" currently without any way to change it to anything else. Except for manually changing it, every time. Except that you can only do that in the contacts app but not from WhatsApp for example. So every time someone new contacts me, I need to copy their digits, open the contacts app, manually type in their name, paste the number and then make sure to save it to something that\u0027s not just \"Device\" since you cannot change that after the fact. Not a great user experience to say the least.",
+      "revId": "78a382880b6fa333e2ae1fe389f53ad4ba0dc47f",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
