@@ -33,6 +33,23 @@
       "message": "Try using https://review.lineageos.org/c/LineageOS/android_vendor_lineage/+/488403 as an alternative",
       "revId": "78a382880b6fa333e2ae1fe389f53ad4ba0dc47f",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a00ebdf3_bbae0f5f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 37192
+      },
+      "writtenOn": "2026-06-02T14:46:25Z",
+      "side": 1,
+      "message": "I don\u0027t think the overlay solution is good. It still mandates a hardcoded list of allowed providers. Google is trying its best to close Android and I don\u0027t think we should follow that route.",
+      "revId": "78a382880b6fa333e2ae1fe389f53ad4ba0dc47f",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ],
   "submitRequirementResults": [
