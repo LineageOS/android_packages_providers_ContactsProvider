@@ -50,6 +50,24 @@
       "message": "I don\u0027t think the overlay solution is good. It still mandates a hardcoded list of allowed providers. Google is trying its best to close Android and I don\u0027t think we should follow that route.",
       "revId": "78a382880b6fa333e2ae1fe389f53ad4ba0dc47f",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a9913f4d_a758e32c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 36888
+      },
+      "writtenOn": "2026-06-02T14:49:53Z",
+      "side": 1,
+      "message": "I couldn\u0027t agree more. So far, however, no one here has addressed these arguments.",
+      "parentUuid": "a00ebdf3_bbae0f5f",
+      "revId": "78a382880b6fa333e2ae1fe389f53ad4ba0dc47f",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ],
   "submitRequirementResults": [
