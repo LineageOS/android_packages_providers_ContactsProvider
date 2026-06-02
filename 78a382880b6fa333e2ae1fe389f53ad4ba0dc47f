@@ -86,6 +86,24 @@
       "parentUuid": "a9913f4d_a758e32c",
       "revId": "78a382880b6fa333e2ae1fe389f53ad4ba0dc47f",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "fdd468cd_ecc354a1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 36888
+      },
+      "writtenOn": "2026-06-02T15:19:06Z",
+      "side": 1,
+      "message": "At first glance, that sounds like a purely formal argument. If the code being removed restricts the user, then that’s a good thing, isn’t it?",
+      "parentUuid": "a830ad95_677fde87",
+      "revId": "78a382880b6fa333e2ae1fe389f53ad4ba0dc47f",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ],
   "submitRequirementResults": [
